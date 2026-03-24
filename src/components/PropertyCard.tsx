@@ -24,9 +24,13 @@ const PropertyCard = ({
   featured = false,
 }: PropertyCardProps) => {
   const [liked, setLiked] = useState(false);
+  const navigate = useNavigate();
 
   return (
-    <div className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
+    <div
+      onClick={() => navigate(`/imovel/${encodeURIComponent(title)}`)}
+      className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+    >
       <div className="relative overflow-hidden h-56">
         <img
           src={image}
