@@ -1,5 +1,6 @@
 import { Bed, Bath, Maximize, Heart, Star } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface PropertyCardProps {
   image: string;
