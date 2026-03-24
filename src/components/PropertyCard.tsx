@@ -1,5 +1,6 @@
 import { Bed, Bath, Maximize, Heart, Star } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface PropertyCardProps {
   image: string;
@@ -23,9 +24,13 @@ const PropertyCard = ({
   featured = false,
 }: PropertyCardProps) => {
   const [liked, setLiked] = useState(false);
+  const navigate = useNavigate();
 
   return (
-    <div className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
+    <div
+      onClick={() => navigate(`/imovel/${encodeURIComponent(title)}`)}
+      className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+    >
       <div className="relative overflow-hidden h-56">
         <img
           src={image}
@@ -41,7 +46,7 @@ const PropertyCard = ({
           {price}
         </span>
         <button
-          onClick={() => setLiked(!liked)}
+          onClick={(e) => { e.stopPropagation(); setLiked(!liked); }}
           className="absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-card transition-colors"
         >
           <Heart
