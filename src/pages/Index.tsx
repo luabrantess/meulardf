@@ -1,157 +1,129 @@
-import Navbar from "@/components/Navbar";
+import { Building2, Mail, MapPin, Phone, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
 import HeroSection from "@/components/HeroSection";
+import Navbar from "@/components/Navbar";
 import PropertyCard from "@/components/PropertyCard";
-import { Building2, Phone, Mail, MapPin } from "lucide-react";
-
-import property1 from "@/assets/property-1.jpg";
-import property2 from "@/assets/property-2.jpg";
-import property3 from "@/assets/property-3.jpg";
-import property4 from "@/assets/property-4.jpg";
-import property5 from "@/assets/property-5.jpg";
-import property6 from "@/assets/property-6.jpg";
-
-const properties = [
-  {
-    image: property1,
-    title: "Apartamento de Luxo com Vista Panorâmica",
-    location: "Jardins, São Paulo - SP",
-    price: "R$ 1.850.000",
-    bedrooms: 3,
-    bathrooms: 2,
-    area: 142,
-    featured: true,
-  },
-  {
-    image: property2,
-    title: "Casa Clássica com Jardim Amplo",
-    location: "Higienópolis, São Paulo - SP",
-    price: "R$ 2.300.000",
-    bedrooms: 4,
-    bathrooms: 3,
-    area: 280,
-    featured: false,
-  },
-  {
-    image: property3,
-    title: "Cobertura Duplex com Terraço",
-    location: "Leblon, Rio de Janeiro - RJ",
-    price: "R$ 4.500.000",
-    bedrooms: 4,
-    bathrooms: 4,
-    area: 320,
-    featured: true,
-  },
-  {
-    image: property4,
-    title: "Studio Moderno e Aconchegante",
-    location: "Vila Madalena, São Paulo - SP",
-    price: "R$ 480.000",
-    bedrooms: 1,
-    bathrooms: 1,
-    area: 38,
-    featured: false,
-  },
-  {
-    image: property5,
-    title: "Casa Contemporânea com Piscina",
-    location: "Alphaville, Barueri - SP",
-    price: "R$ 3.200.000",
-    bedrooms: 5,
-    bathrooms: 4,
-    area: 450,
-    featured: true,
-  },
-  {
-    image: property6,
-    title: "Apartamento Gourmet Alto Padrão",
-    location: "Itaim Bibi, São Paulo - SP",
-    price: "R$ 1.650.000",
-    bedrooms: 3,
-    bathrooms: 3,
-    area: 165,
-    featured: false,
-  },
-];
+import { useAuthSession } from "@/hooks/use-auth";
+import { useLikedProperties, useProperties, useToggleLike } from "@/hooks/use-real-estate";
 
 const Index = () => {
+  const { session } = useAuthSession();
+  const { data: properties = [], isLoading } = useProperties();
+  const { data: likedProperties = [] } = useLikedProperties(session);
+  const toggleLike = useToggleLike(session);
+
+  const featuredProperties = properties.filter((property) => property.featured).slice(0, 6);
+  const spotlightProperty = [...properties].sort((a, b) => b.likesCount - a.likesCount)[0];
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <HeroSection />
 
-      {/* Properties Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="mb-10">
-          <h2 className="text-3xl font-display font-bold text-foreground mb-2">
-            Imóveis em Destaque
-          </h2>
-          <p className="text-muted-foreground font-body">
-            Seleção especial dos melhores imóveis disponíveis
-          </p>
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-body uppercase tracking-[0.18em] text-muted-foreground">Curadoria</p>
+            <h2 className="mt-2 text-3xl font-display font-bold text-foreground">Imóveis em destaque</h2>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
+              Os anúncios mais desejados, com curtidas ativas, visita marcada e navegação pronta para celular.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link to="/imoveis" className="inline-flex min-h-11 items-center justify-center rounded-md border border-border px-5 text-sm font-display font-semibold text-foreground transition-colors hover:bg-surface">
+              Ver todos os imóveis
+            </Link>
+            <Link to="/destaques" className="inline-flex min-h-11 items-center justify-center rounded-md bg-accent px-5 text-sm font-display font-semibold text-accent-foreground transition-opacity hover:opacity-90">
+              Página de destaques
+            </Link>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-          {properties.map((property, index) => (
-            <PropertyCard key={index} {...property} />
-          ))}
-        </div>
+        {spotlightProperty && (
+          <div className="mb-10 grid gap-6 rounded-lg border border-border bg-surface p-5 lg:grid-cols-[1.4fr_1fr] lg:p-6">
+            <div>
+              <p className="inline-flex items-center gap-2 rounded-full bg-card px-3 py-1 text-xs font-display font-semibold text-primary">
+                <TrendingUp className="h-3.5 w-3.5" /> Mais curtido agora
+              </p>
+              <h3 className="mt-4 text-2xl font-display font-bold text-foreground">{spotlightProperty.title}</h3>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">{spotlightProperty.description}</p>
+              <div className="mt-5 flex flex-wrap gap-3 text-sm text-muted-foreground">
+                <span className="rounded-full bg-card px-3 py-1">{spotlightProperty.location}</span>
+                <span className="rounded-full bg-card px-3 py-1">{spotlightProperty.likesCount} likes</span>
+                <span className="rounded-full bg-card px-3 py-1">{spotlightProperty.areaTotal} m²</span>
+              </div>
+            </div>
+            <img src={spotlightProperty.coverImage} alt={spotlightProperty.title} className="h-60 w-full rounded-md object-cover lg:h-full" loading="lazy" />
+          </div>
+        )}
 
-        <div className="text-center mt-12">
-          <button className="bg-primary text-primary-foreground font-display font-semibold px-10 py-3 rounded-lg hover:opacity-90 transition-opacity">
-            Ver Todos os Imóveis
-          </button>
-        </div>
+        {isLoading ? (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="h-80 animate-pulse rounded-lg border border-border bg-surface" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {featuredProperties.map((property) => (
+              <PropertyCard
+                key={property.id}
+                property={property}
+                liked={likedProperties.includes(property.id)}
+                onLike={(propertyId) => toggleLike.mutate(propertyId)}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* Stats */}
-      <section className="bg-surface py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <section className="bg-surface py-14">
+        <div className="mx-auto grid max-w-7xl gap-4 px-4 text-center sm:grid-cols-2 lg:grid-cols-4 sm:px-6 lg:px-8">
           {[
-            { value: "15.000+", label: "Imóveis Disponíveis" },
-            { value: "8.500+", label: "Clientes Satisfeitos" },
-            { value: "120+", label: "Cidades Atendidas" },
-            { value: "10+", label: "Anos de Experiência" },
+            { value: `${properties.length}+`, label: "Anúncios ativos" },
+            { value: `${properties.reduce((total, property) => total + property.likesCount, 0)}+`, label: "Curtidas registradas" },
+            { value: "100%", label: "Experiência mobile" },
+            { value: "24h", label: "Tempo para novo anúncio entrar no radar" },
           ].map((stat) => (
-            <div key={stat.label}>
+            <div key={stat.label} className="rounded-lg border border-border bg-card p-5">
               <p className="text-3xl font-display font-bold text-primary">{stat.value}</p>
-              <p className="text-muted-foreground text-sm mt-1 font-body">{stat.label}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-primary text-primary-foreground py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+      <footer id="contato" className="bg-primary py-12 text-primary-foreground">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-10 md:grid-cols-3">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Building2 className="w-6 h-6" />
-                <span className="font-display font-bold text-lg">ImóvelBR</span>
+              <div className="mb-4 flex items-center gap-2">
+                <Building2 className="h-6 w-6" />
+                <span className="text-lg font-display font-bold">ImóvelBR</span>
               </div>
-              <p className="text-primary-foreground/70 text-sm font-body leading-relaxed">
-                Encontre o imóvel perfeito para você. Compra, venda e aluguel com segurança e confiança.
+              <p className="max-w-sm text-sm text-primary-foreground/75">
+                Portal em português com anúncio, curtidas, agendamento de visitas e visão operacional para a equipe administrativa.
               </p>
             </div>
             <div>
-              <h4 className="font-display font-semibold mb-4">Links Rápidos</h4>
-              <div className="flex flex-col gap-2 text-sm text-primary-foreground/70 font-body">
-                <a href="#" className="hover:text-primary-foreground transition-colors">Sobre Nós</a>
-                <a href="#" className="hover:text-primary-foreground transition-colors">Como Funciona</a>
-                <a href="#" className="hover:text-primary-foreground transition-colors">Blog</a>
-                <a href="#" className="hover:text-primary-foreground transition-colors">Termos de Uso</a>
+              <h2 className="text-lg font-display font-semibold">Acesso rápido</h2>
+              <div className="mt-4 flex flex-col gap-2 text-sm text-primary-foreground/75">
+                <Link to="/imoveis" className="transition-colors hover:text-primary-foreground">Catálogo</Link>
+                <Link to="/destaques" className="transition-colors hover:text-primary-foreground">Destaques</Link>
+                <Link to="/anunciar" className="transition-colors hover:text-primary-foreground">Anunciar imóvel</Link>
+                <Link to="/admin" className="transition-colors hover:text-primary-foreground">Admin</Link>
               </div>
             </div>
             <div>
-              <h4 className="font-display font-semibold mb-4">Contato</h4>
-              <div className="flex flex-col gap-3 text-sm text-primary-foreground/70 font-body">
-                <span className="flex items-center gap-2"><Phone className="w-4 h-4" /> (11) 9999-8888</span>
-                <span className="flex items-center gap-2"><Mail className="w-4 h-4" /> contato@imovelbr.com</span>
-                <span className="flex items-center gap-2"><MapPin className="w-4 h-4" /> São Paulo, SP - Brasil</span>
+              <h2 className="text-lg font-display font-semibold">Contato</h2>
+              <div className="mt-4 flex flex-col gap-3 text-sm text-primary-foreground/75">
+                <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> (11) 99999-8888</span>
+                <span className="inline-flex items-center gap-2"><Mail className="h-4 w-4" /> contato@imovelbr.com</span>
+                <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" /> São Paulo, SP - Brasil</span>
               </div>
             </div>
           </div>
-          <div className="border-t border-primary-foreground/20 mt-10 pt-6 text-center text-xs text-primary-foreground/50 font-body">
+          <div className="mt-10 border-t border-primary-foreground/20 pt-6 text-center text-xs text-primary-foreground/55">
             © 2026 ImóvelBR. Todos os direitos reservados.
           </div>
         </div>

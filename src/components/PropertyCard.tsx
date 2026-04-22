@@ -1,79 +1,83 @@
-import { Bed, Bath, Maximize, Heart, Star } from "lucide-react";
-import { useState } from "react";
+import { Bath, Bed, Heart, MapPin, Maximize, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { formatPriceBRL, getPurposeLabel } from "@/lib/property-service";
+import type { Property } from "@/types/real-estate";
 
 interface PropertyCardProps {
-  image: string;
-  title: string;
-  location: string;
-  price: string;
-  bedrooms: number;
-  bathrooms: number;
-  area: number;
-  featured?: boolean;
+  property: Property;
+  liked?: boolean;
+  onLike?: (propertyId: string) => void;
 }
 
-const PropertyCard = ({
-  image,
-  title,
-  location,
-  price,
-  bedrooms,
-  bathrooms,
-  area,
-  featured = false,
-}: PropertyCardProps) => {
-  const [liked, setLiked] = useState(false);
+const PropertyCard = ({ property, liked = false, onLike }: PropertyCardProps) => {
   const navigate = useNavigate();
 
   return (
-    <div
-      onClick={() => navigate(`/imovel/${encodeURIComponent(title)}`)}
-      className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+    <article
+      onClick={() => navigate(`/imovel/${property.slug}`)}
+      className="group flex cursor-pointer flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg"
     >
-      <div className="relative overflow-hidden h-56">
+      <div className="relative h-56 overflow-hidden">
         <img
-          src={image}
-          alt={title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          src={property.coverImage}
+          alt={property.title}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
         />
-        {featured && (
-          <span className="absolute top-3 left-3 bg-accent text-accent-foreground text-xs font-display font-semibold px-3 py-1 rounded-full flex items-center gap-1">
-            <Star className="w-3 h-3" /> Destaque
-          </span>
-        )}
-        <span className="absolute bottom-3 right-3 bg-primary text-primary-foreground font-display font-bold text-lg px-4 py-1.5 rounded-lg">
-          {price}
-        </span>
-        <button
-          onClick={(e) => { e.stopPropagation(); setLiked(!liked); }}
-          className="absolute top-3 right-3 w-9 h-9 bg-card/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-card transition-colors"
-        >
-          <Heart
-            className={`w-4 h-4 transition-colors ${liked ? "fill-accent text-accent" : "text-muted-foreground"}`}
-          />
-        </button>
+        <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-foreground/60 to-transparent p-4">
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-card/90 px-3 py-1 text-xs font-display font-semibold text-foreground backdrop-blur">
+              {getPurposeLabel(property.purpose)}
+            </span>
+            {property.featured && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-display font-semibold text-accent-foreground">
+                <Star className="h-3 w-3" /> Destaque
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            aria-label={liked ? "Remover curtida" : "Curtir imóvel"}
+            onClick={(event) => {
+              event.stopPropagation();
+              onLike?.(property.id);
+            }}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground backdrop-blur transition-colors hover:text-accent"
+          >
+            <Heart className={`h-4 w-4 ${liked ? "fill-current text-accent" : ""}`} />
+          </button>
+        </div>
       </div>
 
-      <div className="p-5">
-        <h3 className="font-display font-semibold text-foreground text-lg mb-1 line-clamp-1">
-          {title}
-        </h3>
-        <p className="text-muted-foreground text-sm mb-4">{location}</p>
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="line-clamp-2 text-lg font-display font-semibold text-foreground">{property.title}</h3>
+            <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4" /> {property.location}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-lg font-display font-bold text-primary">{formatPriceBRL(property.price)}</p>
+            <p className="text-xs text-muted-foreground">{property.likesCount} likes</p>
+          </div>
+        </div>
 
-        <div className="flex items-center gap-5 text-muted-foreground text-sm border-t border-border pt-4">
-          <span className="flex items-center gap-1.5">
-            <Bed className="w-4 h-4" /> {bedrooms} Quartos
+        <p className="mt-4 line-clamp-2 text-sm text-muted-foreground">{property.description}</p>
+
+        <div className="mt-5 grid grid-cols-3 gap-3 border-t border-border pt-4 text-xs text-muted-foreground sm:text-sm">
+          <span className="inline-flex items-center gap-1.5">
+            <Bed className="h-4 w-4 text-primary" /> {property.bedrooms} quartos
           </span>
-          <span className="flex items-center gap-1.5">
-            <Bath className="w-4 h-4" /> {bathrooms} Banheiros
+          <span className="inline-flex items-center gap-1.5">
+            <Bath className="h-4 w-4 text-primary" /> {property.bathrooms} banheiros
           </span>
-          <span className="flex items-center gap-1.5">
-            <Maximize className="w-4 h-4" /> {area} m²
+          <span className="inline-flex items-center gap-1.5">
+            <Maximize className="h-4 w-4 text-primary" /> {property.areaTotal} m²
           </span>
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 

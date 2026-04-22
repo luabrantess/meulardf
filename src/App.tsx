@@ -6,6 +6,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import PropertyDetail from "./pages/PropertyDetail.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Catalog from "./pages/Catalog.tsx";
+import Anunciar from "./pages/Anunciar.tsx";
+import Destaques from "./pages/Destaques.tsx";
+import Admin from "./pages/Admin.tsx";
 
 const queryClient = new QueryClient();
 
@@ -17,8 +21,11 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/imovel/:id" element={<PropertyDetail />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/imoveis" element={<Catalog />} />
+          <Route path="/destaques" element={<Destaques />} />
+          <Route path="/anunciar" element={<Anunciar />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/imovel/:slug" element={<PropertyDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
