@@ -1,356 +1,296 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/Navbar";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Heart,
-  Bed,
-  Bath,
-  Maximize,
-  MapPin,
-  Share2,
   ArrowLeft,
+  Bath,
+  Bed,
+  CalendarDays,
   Car,
-  Waves,
-  TreePine,
-  ShieldCheck,
-  Wifi,
-  AirVent,
   ChevronLeft,
   ChevronRight,
-  CalendarDays,
+  Heart,
+  MapPin,
+  Maximize,
   Phone,
+  Share2,
   Star,
 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { z } from "zod";
+import Navbar from "@/components/Navbar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuthSession } from "@/hooks/use-auth";
+import { useLikedProperties, useProperty, useScheduleVisit, useToggleLike } from "@/hooks/use-real-estate";
+import { formatPhoneBR, formatPriceBRL, getPurposeLabel } from "@/lib/property-service";
 import { toast } from "sonner";
 
-import img1 from "@/assets/property-detail-1.jpg";
-import img2 from "@/assets/property-detail-2.jpg";
-import img3 from "@/assets/property-detail-3.jpg";
-import img4 from "@/assets/property-detail-4.jpg";
-import img5 from "@/assets/property-detail-5.jpg";
-
-const images = [img1, img2, img3, img4, img5];
-const imageLabels = ["Sala de Estar", "Cozinha", "Quarto Principal", "Banheiro", "Varanda"];
-
-const amenities = [
-  { icon: Car, label: "2 Vagas de Garagem" },
-  { icon: Waves, label: "Piscina" },
-  { icon: TreePine, label: "Área Verde" },
-  { icon: ShieldCheck, label: "Segurança 24h" },
-  { icon: Wifi, label: "Infraestrutura de Internet" },
-  { icon: AirVent, label: "Ar Condicionado Central" },
-];
+const visitSchema = z.object({
+  visitorName: z.string().trim().min(3, "Informe seu nome."),
+  visitorPhone: z.string().trim().min(10, "Informe um telefone válido."),
+  preferredDate: z.string().min(1, "Selecione uma data."),
+  message: z.string().trim().max(500, "Máximo de 500 caracteres.").optional(),
+});
 
 const PropertyDetail = () => {
   const navigate = useNavigate();
-  const [liked, setLiked] = useState(false);
+  const { slug = "" } = useParams();
   const [currentImage, setCurrentImage] = useState(0);
-  const [scheduleForm, setScheduleForm] = useState({ name: "", phone: "", date: "", message: "" });
+  const { session } = useAuthSession();
+  const { data: property, isLoading } = useProperty(slug);
+  const { data: likedProperties = [] } = useLikedProperties(session);
+  const likeMutation = useToggleLike(session);
+  const scheduleMutation = useScheduleVisit();
+  const form = useForm<z.infer<typeof visitSchema>>({
+    resolver: zodResolver(visitSchema),
+    defaultValues: { visitorName: "", visitorPhone: "", preferredDate: "", message: "" },
+  });
 
-  const nextImage = () => setCurrentImage((prev) => (prev + 1) % images.length);
-  const prevImage = () => setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
+  const gallery = property?.gallery ?? [];
+  const liked = property ? likedProperties.includes(property.id) : false;
+  const mapUrl = useMemo(() => property?.mapEmbedUrl ?? `https://www.google.com/maps?q=${encodeURIComponent(property?.location ?? "Brasil")}&output=embed`, [property]);
 
-  const handleSchedule = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success("Visita agendada com sucesso! Entraremos em contato em breve.");
-    setScheduleForm({ name: "", phone: "", date: "", message: "" });
-  };
+  const onSubmit = form.handleSubmit(async (values) => {
+    if (!property) return;
+    try {
+      await scheduleMutation.mutateAsync({ propertyId: property.id, ...values });
+      form.reset();
+      toast.success("Visita agendada com sucesso.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível agendar a visita.");
+    }
+  });
+
+  const showNextImage = () => setCurrentImage((value) => (gallery.length ? (value + 1) % gallery.length : 0));
+  const showPreviousImage = () => setCurrentImage((value) => (gallery.length ? (value - 1 + gallery.length) % gallery.length : 0));
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex min-h-[70vh] items-center justify-center px-4">
+          <div className="h-24 w-full max-w-xl animate-pulse rounded-lg border border-border bg-surface" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!property) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex min-h-[70vh] items-center justify-center px-4">
+          <div className="rounded-lg border border-border bg-card p-6 text-center shadow-sm">
+            <h1 className="text-2xl font-display font-semibold text-foreground">Imóvel não encontrado</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Esse anúncio não está mais disponível.</p>
+            <Link to="/imoveis" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 text-sm font-display font-semibold text-primary-foreground">
+              Voltar ao catálogo
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24 md:pb-0">
       <Navbar />
 
-      {/* Back button */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-body text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" /> Voltar aos imóveis
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> Voltar
         </button>
       </div>
 
-      {/* Gallery */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 h-auto lg:h-[480px]">
-          {/* Main image */}
-          <div className="lg:col-span-3 relative rounded-xl overflow-hidden group">
-            <img
-              src={images[currentImage]}
-              alt={imageLabels[currentImage]}
-              className="w-full h-72 sm:h-96 lg:h-full object-cover transition-transform duration-500"
-              width={1280}
-              height={960}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-foreground/30 to-transparent" />
-
-            <button
-              onClick={prevImage}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-card/80 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-card"
-            >
-              <ChevronLeft className="w-5 h-5 text-foreground" />
+      <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="relative overflow-hidden rounded-lg border border-border bg-card">
+            <img src={gallery[currentImage] ?? property.coverImage} alt={property.title} className="h-[320px] w-full object-cover sm:h-[480px]" />
+            <button onClick={showPreviousImage} className="absolute left-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-card/90 text-foreground backdrop-blur transition-opacity hover:opacity-90">
+              <ChevronLeft className="h-5 w-5" />
             </button>
-            <button
-              onClick={nextImage}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-card/80 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-card"
-            >
-              <ChevronRight className="w-5 h-5 text-foreground" />
+            <button onClick={showNextImage} className="absolute right-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-card/90 text-foreground backdrop-blur transition-opacity hover:opacity-90">
+              <ChevronRight className="h-5 w-5" />
             </button>
-
-            <span className="absolute bottom-4 left-4 bg-card/80 backdrop-blur-sm text-foreground text-xs font-body px-3 py-1.5 rounded-full">
-              {currentImage + 1} / {images.length} — {imageLabels[currentImage]}
-            </span>
+            <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+              <span className="rounded-full bg-card/90 px-3 py-1 text-xs font-display font-semibold text-foreground backdrop-blur">{getPurposeLabel(property.purpose)}</span>
+              {property.featured && <span className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-display font-semibold text-accent-foreground"><Star className="h-3 w-3" /> Destaque</span>}
+            </div>
           </div>
-
-          {/* Thumbnails */}
-          <div className="hidden lg:flex flex-col gap-3">
-            {images.slice(0, 4).map((img, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentImage(i)}
-                className={`relative rounded-lg overflow-hidden flex-1 border-2 transition-all ${
-                  currentImage === i ? "border-accent" : "border-transparent opacity-70 hover:opacity-100"
-                }`}
-              >
-                <img src={img} alt={imageLabels[i]} className="w-full h-full object-cover" loading="lazy" />
-                {i === 3 && images.length > 4 && (
-                  <div className="absolute inset-0 bg-foreground/50 flex items-center justify-center">
-                    <span className="text-primary-foreground font-display font-bold text-sm">+{images.length - 4} fotos</span>
-                  </div>
-                )}
+          <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 lg:grid-cols-2">
+            {gallery.map((image, index) => (
+              <button key={`${image}-${index}`} onClick={() => setCurrentImage(index)} className={`overflow-hidden rounded-lg border ${index === currentImage ? "border-primary" : "border-border"}`}>
+                <img src={image} alt={`${property.title} ${index + 1}`} className="h-24 w-full object-cover lg:h-[116px]" loading="lazy" />
               </button>
             ))}
           </div>
         </div>
-
-        {/* Mobile thumbnails */}
-        <div className="flex lg:hidden gap-2 mt-3 overflow-x-auto pb-2">
-          {images.map((img, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentImage(i)}
-              className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                currentImage === i ? "border-accent" : "border-transparent opacity-70"
-              }`}
-            >
-              <img src={img} alt={imageLabels[i]} className="w-full h-full object-cover" loading="lazy" />
-            </button>
-          ))}
-        </div>
       </section>
 
-      {/* Content */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Left - Details */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Header */}
-            <div>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <span className="inline-flex items-center gap-1 bg-accent/10 text-accent text-xs font-display font-semibold px-3 py-1 rounded-full mb-3">
-                    <Star className="w-3 h-3" /> Destaque
-                  </span>
-                  <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
-                    Cobertura Duplex com Vista Panorâmica
-                  </h1>
-                  <p className="flex items-center gap-1.5 text-muted-foreground mt-2 font-body">
-                    <MapPin className="w-4 h-4" /> Jardins, São Paulo - SP
-                  </p>
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => {
-                      setLiked(!liked);
-                      toast(liked ? "Removido dos favoritos" : "Adicionado aos favoritos");
-                    }}
-                    className={`w-11 h-11 rounded-full flex items-center justify-center border transition-all ${
-                      liked
-                        ? "bg-accent/10 border-accent text-accent"
-                        : "border-border text-muted-foreground hover:border-accent hover:text-accent"
-                    }`}
-                  >
-                    <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(window.location.href);
-                      toast.success("Link copiado!");
-                    }}
-                    className="w-11 h-11 rounded-full flex items-center justify-center border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all"
-                  >
-                    <Share2 className="w-5 h-5" />
-                  </button>
-                </div>
+      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[1.25fr_0.75fr]">
+          <div className="space-y-8">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h1 className="text-3xl font-display font-bold text-foreground sm:text-4xl">{property.title}</h1>
+                <p className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground sm:text-base">
+                  <MapPin className="h-4 w-4" /> {property.location}
+                </p>
+                <p className="mt-4 text-3xl font-display font-bold text-primary">{formatPriceBRL(property.price)}</p>
               </div>
-
-              <p className="text-3xl font-display font-bold text-primary mt-4">R$ 4.500.000</p>
-              <p className="text-muted-foreground text-sm font-body mt-1">IPTU: R$ 1.200/mês • Condomínio: R$ 2.800/mês</p>
+              <div className="flex gap-2">
+                <button onClick={() => likeMutation.mutate(property.id)} className={`inline-flex h-11 w-11 items-center justify-center rounded-full border ${liked ? "border-accent text-accent" : "border-border text-muted-foreground"}`}>
+                  <Heart className={`h-5 w-5 ${liked ? "fill-current" : ""}`} />
+                </button>
+                <button
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(window.location.href);
+                    toast.success("Link copiado.");
+                  }}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border text-muted-foreground"
+                >
+                  <Share2 className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
-            {/* Specs */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
-                { icon: Bed, value: "4", label: "Quartos" },
-                { icon: Bath, value: "4", label: "Banheiros" },
-                { icon: Maximize, value: "320 m²", label: "Área Total" },
-                { icon: Car, value: "3", label: "Vagas" },
-              ].map((spec) => (
-                <div key={spec.label} className="bg-surface rounded-xl p-4 text-center">
-                  <spec.icon className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <p className="font-display font-bold text-foreground text-lg">{spec.value}</p>
-                  <p className="text-muted-foreground text-xs font-body">{spec.label}</p>
+                { icon: Bed, label: "Quartos", value: property.bedrooms },
+                { icon: Bath, label: "Banheiros", value: property.bathrooms },
+                { icon: Maximize, label: "Área total", value: `${property.areaTotal} m²` },
+                { icon: Car, label: "Vagas", value: property.parkingSpots },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg border border-border bg-surface p-4 text-center">
+                  <item.icon className="mx-auto h-5 w-5 text-primary" />
+                  <p className="mt-3 text-xl font-display font-bold text-foreground">{item.value}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{item.label}</p>
                 </div>
               ))}
             </div>
 
-            {/* Description */}
             <div>
-              <h2 className="text-xl font-display font-bold text-foreground mb-4">Sobre o Imóvel</h2>
-              <div className="text-muted-foreground font-body leading-relaxed space-y-3">
-                <p>
-                  Magnífica cobertura duplex localizada no coração dos Jardins, um dos bairros mais nobres de São Paulo.
-                  Com 320m² de área privativa, este imóvel exclusivo oferece uma vista panorâmica deslumbrante da cidade,
-                  combinando sofisticação, conforto e praticidade.
-                </p>
-                <p>
-                  O pavimento inferior conta com ampla sala de estar e jantar integradas, cozinha gourmet com ilha central,
-                  lavabo social, e três suítes — sendo uma master com closet e banheira de imersão. O pavimento superior
-                  abriga um espaço de home office, sala de TV, terraço com churrasqueira e piscina privativa com deck.
-                </p>
-                <p>
-                  Acabamentos de altíssimo padrão incluem piso em mármore italiano, esquadrias em alumínio com vidro duplo,
-                  iluminação planejada e automação residencial completa. O condomínio oferece infraestrutura completa com
-                  academia, salão de festas, playground e segurança 24 horas.
-                </p>
-              </div>
+              <h2 className="text-xl font-display font-semibold text-foreground">Descrição completa</h2>
+              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-muted-foreground sm:text-base">{property.description}</p>
             </div>
 
-            {/* Amenities */}
             <div>
-              <h2 className="text-xl font-display font-bold text-foreground mb-4">Comodidades</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {amenities.map((amenity) => (
-                  <div
-                    key={amenity.label}
-                    className="flex items-center gap-3 bg-surface rounded-lg p-3"
-                  >
-                    <amenity.icon className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-foreground text-sm font-body">{amenity.label}</span>
-                  </div>
+              <h2 className="text-xl font-display font-semibold text-foreground">Comodidades</h2>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {property.amenities.map((amenity) => (
+                  <span key={amenity} className="rounded-full border border-border bg-surface px-3 py-2 text-sm text-foreground">{amenity}</span>
                 ))}
               </div>
             </div>
 
-            {/* Map */}
             <div>
-              <h2 className="text-xl font-display font-bold text-foreground mb-4">Localização</h2>
-              <div className="rounded-xl overflow-hidden border border-border">
-                <iframe
-                  title="Localização do imóvel"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.0976951333286!2d-46.66166!3d-23.564224!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0xd59f9431f2c9776a!2sJardins%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1700000000000"
-                  width="100%"
-                  height="350"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
+              <h2 className="text-xl font-display font-semibold text-foreground">Mapa</h2>
+              <div className="mt-4 overflow-hidden rounded-lg border border-border">
+                <iframe title={`Mapa de ${property.title}`} src={mapUrl} className="h-80 w-full" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
               </div>
             </div>
           </div>
 
-          {/* Right - Sidebar */}
-          <div className="space-y-6">
-            {/* CTA Card */}
-            <div className="bg-card rounded-xl border border-border p-6 shadow-sm sticky top-24">
-              <p className="text-2xl font-display font-bold text-primary mb-1">R$ 4.500.000</p>
-              <p className="text-muted-foreground text-sm font-body mb-6">Parcelas a partir de R$ 22.000/mês</p>
+          <aside className="space-y-6">
+            <div className="sticky top-24 rounded-lg border border-border bg-card p-6 shadow-sm">
+              <p className="text-2xl font-display font-bold text-primary">{formatPriceBRL(property.price)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{property.likesCount} pessoas curtiram este imóvel.</p>
 
               <Dialog>
                 <DialogTrigger asChild>
-                  <button className="w-full bg-primary text-primary-foreground font-display font-semibold py-3.5 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-                    <CalendarDays className="w-5 h-5" /> Agendar Visita
+                  <button className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-display font-semibold text-primary-foreground transition-opacity hover:opacity-90">
+                    <CalendarDays className="h-4 w-4" /> Agendar visita
                   </button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle className="font-display">Agendar Visita</DialogTitle>
+                    <DialogTitle className="font-display text-xl">Agendar visita</DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleSchedule} className="space-y-4 mt-2">
+                  <form onSubmit={onSubmit} className="space-y-4 pt-2">
                     <div>
-                      <label className="text-sm font-body text-foreground block mb-1.5">Nome completo</label>
-                      <input
-                        type="text"
-                        required
-                        value={scheduleForm.name}
-                        onChange={(e) => setScheduleForm({ ...scheduleForm, name: e.target.value })}
-                        className="w-full border border-input rounded-lg px-3 py-2.5 text-sm font-body bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                        placeholder="Seu nome"
-                      />
+                      <Label htmlFor="visitorName">Nome</Label>
+                      <Input id="visitorName" {...form.register("visitorName")} />
+                      <p className="mt-1 text-xs text-destructive">{form.formState.errors.visitorName?.message}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-body text-foreground block mb-1.5">Telefone</label>
-                      <input
-                        type="tel"
-                        required
-                        value={scheduleForm.phone}
-                        onChange={(e) => setScheduleForm({ ...scheduleForm, phone: e.target.value })}
-                        className="w-full border border-input rounded-lg px-3 py-2.5 text-sm font-body bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                        placeholder="(11) 99999-9999"
-                      />
+                      <Label htmlFor="visitorPhone">Telefone</Label>
+                      <Input id="visitorPhone" type="tel" {...form.register("visitorPhone")} />
+                      <p className="mt-1 text-xs text-destructive">{form.formState.errors.visitorPhone?.message}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-body text-foreground block mb-1.5">Data preferida</label>
-                      <input
-                        type="date"
-                        required
-                        value={scheduleForm.date}
-                        onChange={(e) => setScheduleForm({ ...scheduleForm, date: e.target.value })}
-                        className="w-full border border-input rounded-lg px-3 py-2.5 text-sm font-body bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
+                      <Label htmlFor="preferredDate">Data preferida</Label>
+                      <Input id="preferredDate" type="date" {...form.register("preferredDate")} />
+                      <p className="mt-1 text-xs text-destructive">{form.formState.errors.preferredDate?.message}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-body text-foreground block mb-1.5">Mensagem (opcional)</label>
-                      <textarea
-                        value={scheduleForm.message}
-                        onChange={(e) => setScheduleForm({ ...scheduleForm, message: e.target.value })}
-                        rows={3}
-                        className="w-full border border-input rounded-lg px-3 py-2.5 text-sm font-body bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                        placeholder="Alguma observação?"
-                      />
+                      <Label htmlFor="message">Mensagem</Label>
+                      <Textarea id="message" rows={4} {...form.register("message")} />
+                      <p className="mt-1 text-xs text-destructive">{form.formState.errors.message?.message}</p>
                     </div>
-                    <button
-                      type="submit"
-                      className="w-full bg-accent text-accent-foreground font-display font-semibold py-3 rounded-lg hover:opacity-90 transition-opacity"
-                    >
-                      Confirmar Agendamento
+                    <button type="submit" disabled={scheduleMutation.isPending} className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-accent px-5 text-sm font-display font-semibold text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-60">
+                      Confirmar agendamento
                     </button>
                   </form>
                 </DialogContent>
               </Dialog>
 
-              <button className="w-full mt-3 border border-primary text-primary font-display font-semibold py-3.5 rounded-lg hover:bg-primary/5 transition-colors flex items-center justify-center gap-2">
-                <Phone className="w-5 h-5" /> Ligar Agora
-              </button>
+              <a href={`tel:${property.brokerPhone}`} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-primary px-5 text-sm font-display font-semibold text-primary transition-colors hover:bg-surface">
+                <Phone className="h-4 w-4" /> Ligar agora
+              </a>
 
-              <div className="border-t border-border mt-6 pt-5">
-                <p className="text-xs text-muted-foreground font-body mb-3">Corretor responsável</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary font-display font-bold text-sm">RC</span>
-                  </div>
-                  <div>
-                    <p className="font-display font-semibold text-foreground text-sm">Rafael Costa</p>
-                    <p className="text-muted-foreground text-xs font-body">CRECI 12345-SP</p>
-                  </div>
-                </div>
+              <div className="mt-6 border-t border-border pt-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Corretor responsável</p>
+                <p className="mt-3 text-lg font-display font-semibold text-foreground">{property.brokerName}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{formatPhoneBR(property.brokerPhone)}</p>
               </div>
             </div>
-          </div>
+          </aside>
         </div>
       </section>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-4 py-3 backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-7xl items-center gap-3">
+          <button onClick={() => likeMutation.mutate(property.id)} className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border text-muted-foreground">
+            <Heart className={`h-5 w-5 ${liked ? "fill-current text-accent" : ""}`} />
+          </button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <button className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-display font-semibold text-primary-foreground">
+                <CalendarDays className="h-4 w-4" /> Agendar visita
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-display text-xl">Agendar visita</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={onSubmit} className="space-y-4 pt-2">
+                <div>
+                  <Label htmlFor="visitorNameMobile">Nome</Label>
+                  <Input id="visitorNameMobile" {...form.register("visitorName")} />
+                </div>
+                <div>
+                  <Label htmlFor="visitorPhoneMobile">Telefone</Label>
+                  <Input id="visitorPhoneMobile" type="tel" {...form.register("visitorPhone")} />
+                </div>
+                <div>
+                  <Label htmlFor="preferredDateMobile">Data preferida</Label>
+                  <Input id="preferredDateMobile" type="date" {...form.register("preferredDate")} />
+                </div>
+                <div>
+                  <Label htmlFor="messageMobile">Mensagem</Label>
+                  <Textarea id="messageMobile" rows={4} {...form.register("message")} />
+                </div>
+                <button type="submit" className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-accent px-5 text-sm font-display font-semibold text-accent-foreground">
+                  Confirmar agendamento
+                </button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
     </div>
   );
 };
