@@ -21,7 +21,7 @@ const Navbar = () => {
         <div className="flex h-16 items-center justify-between w-full gap-6">
           <Link to="/" className="flex items-center gap-2">
             <Building2 className="h-7 w-7 text-primary" />
-            <span className="font-display text-xl font-bold text-foreground">ImóvelBR</span>
+            <span className="font-display text-xl font-bold text-foreground">MeuLAR</span>
           </Link>
 
           <div className="hidden items-center gap-6 md:flex">

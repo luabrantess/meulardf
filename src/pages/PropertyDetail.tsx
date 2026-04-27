@@ -241,11 +241,7 @@ const PropertyDetail = () => {
                 <Phone className="h-4 w-4" /> Ligar agora
               </a>
 
-              <div className="mt-6 border-t border-border pt-5">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Corretor responsável</p>
-                <p className="mt-3 text-lg font-display font-semibold text-foreground">{property.brokerName}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{formatPhoneBR(property.brokerPhone)}</p>
-              </div>
+              
             </div>
           </aside>
         </div>

@@ -99,7 +99,7 @@ const Index = () => {
             <div>
               <div className="mb-4 flex items-center gap-2">
                 <Building2 className="h-6 w-6" />
-                <span className="text-lg font-display font-bold">ImóvelBR</span>
+                <span className="text-lg font-display font-bold">MeuLAR</span>
               </div>
               <p className="max-w-sm text-sm text-primary-foreground/75">
                 Portal em português com anúncio, curtidas, agendamento de visitas e visão operacional para a equipe administrativa.
@@ -117,14 +117,14 @@ const Index = () => {
             <div>
               <h2 className="text-lg font-display font-semibold">Contato</h2>
               <div className="mt-4 flex flex-col gap-3 text-sm text-primary-foreground/75">
-                <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> (11) 99999-8888</span>
+                <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> (61) 99217-6224</span>
                 <span className="inline-flex items-center gap-2"><Mail className="h-4 w-4" /> contato@imovelbr.com</span>
-                <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" /> São Paulo, SP - Brasil</span>
+                <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" /> Brasília, DF - Brasil</span>
               </div>
             </div>
           </div>
           <div className="mt-10 border-t border-primary-foreground/20 pt-6 text-center text-xs text-primary-foreground/55">
-            © 2026 ImóvelBR. Todos os direitos reservados.
+            © 2026 MeuLAR. Todos os direitos reservados.
           </div>
         </div>
       </footer>

@@ -31,7 +31,7 @@ const amenitiesOptions = [
 
 const propertySchema = z.object({
   title: z.string().trim().min(5, "Informe um título mais completo.").max(120, "Máximo de 120 caracteres."),
-  price: z.coerce.number().min(50000, "Informe um valor válido."),
+  price: z.coerce.number().min(500, "Informe um valor válido."),
   bedrooms: z.coerce.number().min(1, "Mínimo de 1 quarto.").max(20, "Máximo de 20 quartos."),
   bathrooms: z.coerce.number().min(1, "Mínimo de 1 banheiro.").max(20, "Máximo de 20 banheiros."),
   areaTotal: z.coerce.number().min(20, "Área mínima de 20 m²."),
@@ -67,14 +67,43 @@ const Anunciar = () => {
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
-      const property = await createProperty.mutateAsync(values);
-      toast.success("Imóvel anunciado com sucesso.");
+      // Preparando os dados para o formato que o SQL do Supabase espera
+      const payload = {
+        title: values.title,
+        price: values.price,
+        bedrooms: values.bedrooms,
+        bathrooms: values.bathrooms,
+        area_total: values.areaTotal,      // Ajuste para snake_case
+        parking_spots: values.parkingSpots, // Ajuste para snake_case
+        description: values.description,
+        location: values.location,
+        amenities: values.amenities,
+        broker_name: values.brokerName,    // Ajuste para snake_case
+        broker_phone: values.brokerPhone,  // Ajuste para snake_case
+        purpose: values.purpose,
+        
+        // Gerando o slug automaticamente a partir do título
+        slug: values.title
+          .toLowerCase()
+          .trim()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/[\s_-]+/g, '-')
+          .replace(/^-+|-+$/g, '') + '-' + Math.random().toString(36).substring(2, 7),
+        
+        // Adicionando uma imagem padrão obrigatória
+        cover_image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200",
+        gallery: [],
+      };
+
+      const property = await createProperty.mutateAsync(payload);
+      toast.success("Imóvel anunciado com sucesso!");
       navigate(`/imovel/${property.slug}`);
+      
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível publicar o anúncio.");
+      console.error("Erro ao publicar:", error);
+      toast.error("Erro de conexão com o banco de dados.");
     }
   });
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
