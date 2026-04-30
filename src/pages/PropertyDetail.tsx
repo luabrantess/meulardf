@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
+  ArrowUpRight,
   Bath,
   Bed,
   CalendarDays,
@@ -187,9 +188,27 @@ const PropertyDetail = () => {
             </div>
 
             <div>
-              <h2 className="text-xl font-display font-semibold text-foreground">Mapa</h2>
-              <div className="mt-4 overflow-hidden rounded-lg border border-border">
-                <iframe title={`Mapa de ${property.title}`} src={mapUrl} className="h-80 w-full" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+              <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+                <div className="grid gap-0 lg:grid-cols-[0.95fr_1.35fr]">
+                  <div className="flex flex-col justify-between border-b border-border bg-surface p-5 lg:border-b-0 lg:border-r">
+                    <div>
+                      <p className="inline-flex items-center gap-2 text-sm font-body uppercase tracking-[0.18em] text-muted-foreground">
+                        <MapPin className="h-4 w-4 text-primary" /> Localização
+                      </p>
+                      <h2 className="mt-3 text-2xl font-display font-semibold text-foreground">Onde fica este imóvel</h2>
+                      <p className="mt-3 text-sm leading-6 text-muted-foreground">{property.location}</p>
+                    </div>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.location)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-5 inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-display font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                    >
+                      Abrir rota <ArrowUpRight className="h-4 w-4" />
+                    </a>
+                  </div>
+                  <iframe title={`Mapa de ${property.title}`} src={mapUrl} className="h-[360px] w-full lg:h-[420px]" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+                </div>
               </div>
             </div>
           </div>

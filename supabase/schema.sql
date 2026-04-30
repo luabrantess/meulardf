@@ -160,3 +160,17 @@ on public.scheduled_visits
 for update
 using (public.has_role(auth.uid(), 'admin'))
 with check (public.has_role(auth.uid(), 'admin'));
+
+insert into storage.buckets (id, name, public)
+values ('property-photos', 'property-photos', true)
+on conflict (id) do update set public = excluded.public;
+
+create policy "Property photos are public"
+on storage.objects
+for select
+using (bucket_id = 'property-photos');
+
+create policy "Anyone can upload property photos"
+on storage.objects
+for insert
+with check (bucket_id = 'property-photos');

@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { ImagePlus, Loader2, MapPin, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -47,6 +48,7 @@ const propertySchema = z.object({
 const Anunciar = () => {
   const navigate = useNavigate();
   const createProperty = useCreateProperty();
+  const [photos, setPhotos] = useState<File[]>([]);
   const form = useForm<z.infer<typeof propertySchema>>({
     resolver: zodResolver(propertySchema),
     defaultValues: {
@@ -64,38 +66,29 @@ const Anunciar = () => {
       parkingSpots: 1,
     },
   });
+  const photoPreviews = useMemo(() => photos.map((photo) => URL.createObjectURL(photo)), [photos]);
+  const watchedLocation = form.watch("location");
+  const previewMapUrl = `https://www.google.com/maps?q=${encodeURIComponent(watchedLocation || "Brasília DF")}&output=embed`;
+
+  useEffect(() => () => photoPreviews.forEach((url) => URL.revokeObjectURL(url)), [photoPreviews]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
-      // Preparando os dados para o formato que o SQL do Supabase espera
-      const payload = {
+      const property = await createProperty.mutateAsync({
         title: values.title,
         price: values.price,
         bedrooms: values.bedrooms,
         bathrooms: values.bathrooms,
-        area_total: values.areaTotal,      // Ajuste para snake_case
-        parking_spots: values.parkingSpots, // Ajuste para snake_case
+        areaTotal: values.areaTotal,
+        parkingSpots: values.parkingSpots,
         description: values.description,
         location: values.location,
         amenities: values.amenities,
-        broker_name: values.brokerName,    // Ajuste para snake_case
-        broker_phone: values.brokerPhone,  // Ajuste para snake_case
+        brokerName: values.brokerName,
+        brokerPhone: values.brokerPhone,
         purpose: values.purpose,
-        
-        // Gerando o slug automaticamente a partir do título
-        slug: values.title
-          .toLowerCase()
-          .trim()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/[\s_-]+/g, '-')
-          .replace(/^-+|-+$/g, '') + '-' + Math.random().toString(36).substring(2, 7),
-        
-        // Adicionando uma imagem padrão obrigatória
-        cover_image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200",
-        gallery: [],
-      };
-
-      const property = await createProperty.mutateAsync(payload);
+        photos,
+      });
       toast.success("Imóvel anunciado com sucesso!");
       navigate(`/imovel/${property.slug}`);
       
@@ -173,9 +166,71 @@ const Anunciar = () => {
           </div>
 
           <div className="lg:col-span-2">
+            <Label htmlFor="photos">Fotos do imóvel</Label>
+            <label
+              htmlFor="photos"
+              className="mt-2 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface px-4 py-6 text-center transition-colors hover:border-primary hover:bg-background"
+            >
+              <ImagePlus className="h-9 w-9 text-primary" />
+              <span className="mt-3 text-sm font-display font-semibold text-foreground">Selecionar fotos</span>
+              <span className="mt-1 text-xs text-muted-foreground">Use imagens JPG, PNG ou WebP. A primeira foto vira a capa do anúncio.</span>
+            </label>
+            <Input
+              id="photos"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              multiple
+              className="sr-only"
+              onChange={(event) => {
+                const selectedPhotos = Array.from(event.target.files ?? []);
+                setPhotos((current) => [...current, ...selectedPhotos].slice(0, 8));
+                event.target.value = "";
+              }}
+            />
+            {photoPreviews.length ? (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {photoPreviews.map((preview, index) => (
+                  <div key={preview} className="relative overflow-hidden rounded-lg border border-border bg-card">
+                    <img src={preview} alt={`Foto selecionada ${index + 1}`} className="h-36 w-full object-cover" />
+                    <button
+                      type="button"
+                      aria-label="Remover foto"
+                      onClick={() => setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index))}
+                      className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-card/90 text-foreground shadow-sm backdrop-blur"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    {index === 0 ? <span className="absolute bottom-2 left-2 rounded-full bg-primary px-3 py-1 text-xs font-display font-semibold text-primary-foreground">Capa</span> : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="lg:col-span-2">
             <Label htmlFor="description">Descrição completa</Label>
             <Textarea id="description" rows={7} placeholder="Destaques do imóvel, estrutura, condomínio e vizinhança." {...form.register("description")} />
             <p className="mt-1 text-xs text-destructive">{form.formState.errors.description?.message}</p>
+          </div>
+
+          <div className="lg:col-span-2 overflow-hidden rounded-lg border border-border bg-card">
+            <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="inline-flex items-center gap-2 text-sm font-display font-semibold text-foreground">
+                  <MapPin className="h-4 w-4 text-primary" /> Prévia do mapa
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">{watchedLocation || "Digite a localização para visualizar o endereço do anúncio."}</p>
+              </div>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(watchedLocation || "Brasília DF")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-10 items-center justify-center rounded-md border border-border px-4 text-sm font-display font-semibold text-foreground transition-colors hover:bg-surface"
+              >
+                Abrir no Maps
+              </a>
+            </div>
+            <iframe title="Prévia do mapa do imóvel" src={previewMapUrl} className="h-72 w-full" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
           </div>
 
           <div className="lg:col-span-2">

@@ -1,6 +1,7 @@
 export type PropertyPurpose = "venda" | "aluguel" | "lancamento";
 export type VisitStatus = "novo" | "contato_pendente" | "contatado" | "concluido";
 
+
 export interface Property {
   id: string;
   slug: string;
@@ -63,6 +64,7 @@ export interface CreatePropertyInput {
   brokerPhone: string;
   purpose: PropertyPurpose;
   parkingSpots?: number;
+  photos?: File[];
 }
 
 export interface AdminOverview {

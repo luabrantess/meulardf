@@ -23,6 +23,7 @@ const purposeLabels = {
 } as const;
 
 const normalizePhone = (phone: string) => phone.replace(/\D/g, "");
+const PROPERTY_PHOTOS_BUCKET = "property-photos";
 
 const slugify = (value: string) =>
   value
@@ -107,6 +108,40 @@ const mapPropertyToInsert = (property: CreatePropertyInput & { slug: string; cov
   likes_count: 0,
   map_embed_url: `https://www.google.com/maps?q=${encodeURIComponent(property.location)}&output=embed`,
 });
+
+const fileToDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+const uploadPropertyPhotos = async (files: File[], slug: string) => {
+  if (!files.length) return [];
+
+  if (isSupabaseConfigured && supabase) {
+    const uploadedUrls = await Promise.all(
+      files.map(async (file, index) => {
+        const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+        const path = `${slug}/${Date.now()}-${index}.${extension}`;
+        const { error } = await supabase.storage.from(PROPERTY_PHOTOS_BUCKET).upload(path, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+        if (error) throw error;
+
+        const { data } = supabase.storage.from(PROPERTY_PHOTOS_BUCKET).getPublicUrl(path);
+        return data.publicUrl;
+      }),
+    );
+
+    return uploadedUrls;
+  }
+
+  return Promise.all(files.map(fileToDataUrl));
+};
 
 const applyFilters = (properties: Property[], filters: PropertyFilters = {}) =>
   properties.filter((property) => {
@@ -197,11 +232,14 @@ export const togglePropertyLike = async (propertyId: string, session: Session | 
 export const createProperty = async (input: CreatePropertyInput): Promise<Property> => {
   const slugBase = slugify(input.title);
   const fallbackImage = mockProperties[(Date.now() + input.title.length) % mockProperties.length]?.coverImage ?? defaultGallery[0];
+  const slug = `${slugBase}-${Date.now().toString().slice(-5)}`;
+  const uploadedPhotos = await uploadPropertyPhotos(input.photos ?? [], slug);
+  const gallery = uploadedPhotos.length ? uploadedPhotos : [fallbackImage, ...defaultGallery];
   const payload = {
     ...input,
-    slug: `${slugBase}-${Date.now().toString().slice(-5)}`,
-    coverImage: fallbackImage,
-    gallery: [fallbackImage, ...defaultGallery],
+    slug,
+    coverImage: gallery[0],
+    gallery,
   };
 
   if (isSupabaseConfigured && supabase) {
