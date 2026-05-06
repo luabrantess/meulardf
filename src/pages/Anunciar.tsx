@@ -30,6 +30,14 @@ const amenitiesOptions = [
   "Vista panorâmica",
 ];
 
+const getSubmitErrorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return "Erro de conexão com o banco de dados.";
+};
+
 const propertySchema = z.object({
   title: z.string().trim().min(5, "Informe um título mais completo.").max(120, "Máximo de 120 caracteres."),
   price: z.coerce.number().min(500, "Informe um valor válido."),
@@ -94,7 +102,7 @@ const Anunciar = () => {
       
     } catch (error) {
       console.error("Erro ao publicar:", error);
-      toast.error("Erro de conexão com o banco de dados.");
+      toast.error(getSubmitErrorMessage(error));
     }
   });
   return (
