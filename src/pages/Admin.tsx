@@ -18,8 +18,8 @@ const loginSchema = z.object({
 
 const Admin = () => {
   const { session, loading } = useAuthSession();
-  const { data: isAdmin, isLoading: checkingAdmin } = useAdminAccess(session?.user?.id);
-  const { data: overview, isLoading: loadingOverview } = useAdminOverview(Boolean(session && isAdmin));
+  const { data: isAdmin, isLoading: checkingAdmin, error: adminAccessError } = useAdminAccess(session?.user?.id);
+  const { data: overview, isLoading: loadingOverview, error: overviewError } = useAdminOverview(Boolean(session && isAdmin));
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
@@ -116,6 +116,21 @@ const Admin = () => {
     );
   }
 
+  if (adminAccessError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex min-h-[70vh] items-center justify-center px-4">
+          <div className="max-w-md rounded-lg border border-border bg-card p-6 text-center shadow-sm">
+            <ShieldCheck className="mx-auto h-10 w-10 text-accent" />
+            <h1 className="mt-4 text-xl font-display font-semibold text-foreground">Não foi possível validar o admin</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{adminAccessError instanceof Error ? adminAccessError.message : "Confira a função has_role e a tabela user_roles no Supabase."}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background">
@@ -151,6 +166,13 @@ const Admin = () => {
         {loadingOverview ? (
           <div className="inline-flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin text-primary" /> Carregando dados do painel...
+          </div>
+        ) : overviewError ? (
+          <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
+            <h2 className="text-xl font-display font-semibold text-foreground">Não foi possível carregar o painel</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {overviewError instanceof Error ? overviewError.message : "Confira as policies de leitura das tabelas properties e scheduled_visits no Supabase."}
+            </p>
           </div>
         ) : overview ? (
           <>

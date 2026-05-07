@@ -30,9 +30,37 @@ const amenitiesOptions = [
   "Vista panorâmica",
 ];
 
+const getSubmitErrorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return "Erro de conexão com o banco de dados.";
+};
+
+const parseBRLInput = (value: string) => {
+  const normalizedValue = value.replace(/\./g, "").replace(",", ".");
+  return Number(normalizedValue);
+};
+
+const formatBRLInput = (value: string) => {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+
+  const numericValue = Number(digits) / 100;
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numericValue);
+};
+
 const propertySchema = z.object({
   title: z.string().trim().min(5, "Informe um título mais completo.").max(120, "Máximo de 120 caracteres."),
-  price: z.coerce.number().min(500, "Informe um valor válido."),
+  price: z
+    .string()
+    .trim()
+    .transform(parseBRLInput)
+    .pipe(z.number().min(500, "Informe um valor válido.")),
   bedrooms: z.coerce.number().min(1, "Mínimo de 1 quarto.").max(20, "Máximo de 20 quartos."),
   bathrooms: z.coerce.number().min(1, "Mínimo de 1 banheiro.").max(20, "Máximo de 20 banheiros."),
   areaTotal: z.coerce.number().min(20, "Área mínima de 20 m²."),
@@ -49,11 +77,11 @@ const Anunciar = () => {
   const navigate = useNavigate();
   const createProperty = useCreateProperty();
   const [photos, setPhotos] = useState<File[]>([]);
-  const form = useForm<z.infer<typeof propertySchema>>({
+  const form = useForm<z.input<typeof propertySchema>>({
     resolver: zodResolver(propertySchema),
     defaultValues: {
       title: "",
-      price: 0,
+      price: "",
       bedrooms: 3,
       bathrooms: 2,
       areaTotal: 200,
@@ -76,7 +104,7 @@ const Anunciar = () => {
     try {
       const property = await createProperty.mutateAsync({
         title: values.title,
-        price: values.price,
+        price: parseBRLInput(values.price),
         bedrooms: values.bedrooms,
         bathrooms: values.bathrooms,
         areaTotal: values.areaTotal,
@@ -94,7 +122,7 @@ const Anunciar = () => {
       
     } catch (error) {
       console.error("Erro ao publicar:", error);
-      toast.error("Erro de conexão com o banco de dados.");
+      toast.error(getSubmitErrorMessage(error));
     }
   });
   return (
@@ -122,7 +150,15 @@ const Anunciar = () => {
 
           <div>
             <Label htmlFor="price">Valor</Label>
-            <Input id="price" type="number" inputMode="numeric" {...form.register("price")} />
+            <Input
+              id="price"
+              inputMode="decimal"
+              placeholder="Ex.: 850.000,00"
+              {...form.register("price")}
+              onChange={(event) => {
+                form.setValue("price", formatBRLInput(event.target.value), { shouldValidate: true });
+              }}
+            />
             <p className="mt-1 text-xs text-destructive">{form.formState.errors.price?.message}</p>
           </div>
 

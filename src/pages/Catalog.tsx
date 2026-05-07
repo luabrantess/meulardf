@@ -6,17 +6,29 @@ import { useAuthSession } from "@/hooks/use-auth";
 import { useLikedProperties, useProperties, useToggleLike } from "@/hooks/use-real-estate";
 import type { PropertyFilters, PropertyPurpose } from "@/types/real-estate";
 
+const parsePriceRange = (priceRange: string) => {
+  if (!priceRange) return {};
+  if (priceRange.endsWith("+")) {
+    return { minPrice: Number(priceRange.replace("+", "")) };
+  }
+
+  const [min, max] = priceRange.split("-");
+  return {
+    minPrice: min ? Number(min) : undefined,
+    maxPrice: max ? Number(max) : undefined,
+  };
+};
+
 const Catalog = () => {
   const [searchParams] = useSearchParams();
   const { session } = useAuthSession();
   const filters = useMemo<PropertyFilters>(() => {
-    const priceRange = searchParams.get("price") ?? "";
-    const [min, max] = priceRange.split("-");
+    const priceFilters = parsePriceRange(searchParams.get("price") ?? "");
+
     return {
       purpose: (searchParams.get("purpose") as PropertyPurpose | null) ?? "",
       location: searchParams.get("location") ?? "",
-      minPrice: min ? Number(min) : undefined,
-      maxPrice: max && max !== "+" ? Number(max) : undefined,
+      ...priceFilters,
     };
   }, [searchParams]);
 

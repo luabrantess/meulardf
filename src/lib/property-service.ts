@@ -14,6 +14,7 @@ const STORAGE_KEYS = {
   properties: "imovelbr-properties",
   visits: "imovelbr-visits",
   likes: "imovelbr-liked-properties",
+  visitorId: "imovelbr-visitor-id",
 };
 
 const purposeLabels = {
@@ -24,6 +25,22 @@ const purposeLabels = {
 
 const normalizePhone = (phone: string) => phone.replace(/\D/g, "");
 const PROPERTY_PHOTOS_BUCKET = "property-photos";
+const normalizeSearchText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+const getVisitorId = () => {
+  if (typeof window === "undefined") return "";
+  const existingVisitorId = window.localStorage.getItem(STORAGE_KEYS.visitorId);
+  if (existingVisitorId) return existingVisitorId;
+
+  const nextVisitorId = crypto.randomUUID();
+  window.localStorage.setItem(STORAGE_KEYS.visitorId, nextVisitorId);
+  return nextVisitorId;
+};
 
 const slugify = (value: string) =>
   value
@@ -148,9 +165,9 @@ const applyFilters = (properties: Property[], filters: PropertyFilters = {}) =>
     if (!property.published) return false;
     if (filters.featuredOnly && !property.featured) return false;
     if (filters.purpose && property.purpose !== filters.purpose) return false;
-    if (filters.location && !property.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
-    if (typeof filters.minPrice === "number" && property.price < filters.minPrice) return false;
-    if (typeof filters.maxPrice === "number" && property.price > filters.maxPrice) return false;
+    if (filters.location && !normalizeSearchText(property.location).includes(normalizeSearchText(filters.location))) return false;
+    if (typeof filters.minPrice === "number" && Number.isFinite(filters.minPrice) && property.price < filters.minPrice) return false;
+    if (typeof filters.maxPrice === "number" && Number.isFinite(filters.maxPrice) && property.price > filters.maxPrice) return false;
     return true;
   });
 
@@ -196,8 +213,12 @@ export const getPropertyBySlug = async (slug: string): Promise<Property | null> 
 };
 
 export const getLikedPropertyIds = async (session: Session | null): Promise<string[]> => {
-  if (isSupabaseConfigured && supabase && session?.user?.id) {
-    const { data, error } = await supabase.from("property_likes").select("property_id").eq("user_id", session.user.id);
+  if (isSupabaseConfigured && supabase) {
+    const query = supabase.from("property_likes").select("property_id");
+    const { data, error } = session?.user?.id
+      ? await query.eq("user_id", session.user.id)
+      : await query.eq("visitor_id", getVisitorId());
+
     if (error) throw error;
     return (data ?? []).map((item) => String(item.property_id));
   }
@@ -206,10 +227,11 @@ export const getLikedPropertyIds = async (session: Session | null): Promise<stri
 };
 
 export const togglePropertyLike = async (propertyId: string, session: Session | null) => {
-  if (isSupabaseConfigured && supabase && session?.user?.id) {
+  if (isSupabaseConfigured && supabase) {
     const { error } = await supabase.rpc("toggle_property_like", {
       _property_id: propertyId,
-      _user_id: session.user.id,
+      _user_id: session?.user?.id ?? null,
+      _visitor_id: session?.user?.id ? null : getVisitorId(),
     });
     if (error) throw error;
     return;
@@ -318,7 +340,7 @@ export const getAdminOverview = async (): Promise<AdminOverview> => {
       supabase.from("properties").select("*").order("created_at", { ascending: false }),
       supabase
         .from("scheduled_visits")
-        .select("id, property_id, visitor_name, visitor_phone, preferred_date, message, created_at, status, properties(title, broker_name, broker_phone)")
+        .select("id, property_id, visitor_name, visitor_phone, preferred_date, message, created_at, status")
         .order("created_at", { ascending: false }),
     ]);
 
@@ -326,19 +348,24 @@ export const getAdminOverview = async (): Promise<AdminOverview> => {
     if (visitsError) throw visitsError;
 
     const mappedProperties = (properties ?? []).map(mapRowToProperty);
-    const mappedVisits: ScheduledVisit[] = (visits ?? []).map((visit: any) => ({
-      id: String(visit.id),
-      propertyId: String(visit.property_id),
-      propertyTitle: String(visit.properties?.title ?? "Imóvel"),
-      brokerName: String(visit.properties?.broker_name ?? "Corretor"),
-      brokerPhone: String(visit.properties?.broker_phone ?? ""),
-      visitorName: String(visit.visitor_name),
-      visitorPhone: String(visit.visitor_phone),
-      preferredDate: String(visit.preferred_date),
-      message: String(visit.message ?? ""),
-      createdAt: String(visit.created_at),
-      status: visit.status as ScheduledVisit["status"],
-    }));
+    const propertiesById = new Map(mappedProperties.map((property) => [property.id, property]));
+    const mappedVisits: ScheduledVisit[] = (visits ?? []).map((visit: any) => {
+      const visitProperty = propertiesById.get(String(visit.property_id));
+
+      return {
+        id: String(visit.id),
+        propertyId: String(visit.property_id),
+        propertyTitle: visitProperty?.title ?? "Imóvel",
+        brokerName: visitProperty?.brokerName ?? "Corretor",
+        brokerPhone: visitProperty?.brokerPhone ?? "",
+        visitorName: String(visit.visitor_name),
+        visitorPhone: String(visit.visitor_phone),
+        preferredDate: String(visit.preferred_date),
+        message: String(visit.message ?? ""),
+        createdAt: String(visit.created_at),
+        status: visit.status as ScheduledVisit["status"],
+      };
+    });
 
     return {
       properties: mappedProperties,

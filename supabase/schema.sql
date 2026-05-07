@@ -56,10 +56,18 @@ create table if not exists public.properties (
 create table if not exists public.property_likes (
   id uuid primary key default gen_random_uuid(),
   property_id uuid references public.properties(id) on delete cascade not null,
-  user_id uuid references auth.users(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade,
+  visitor_id text,
   created_at timestamptz not null default now(),
   unique (property_id, user_id)
 );
+
+alter table public.property_likes alter column user_id drop not null;
+alter table public.property_likes add column if not exists visitor_id text;
+
+create unique index if not exists property_likes_property_visitor_unique
+on public.property_likes (property_id, visitor_id)
+where visitor_id is not null;
 
 create table if not exists public.scheduled_visits (
   id uuid primary key default gen_random_uuid(),
@@ -76,7 +84,7 @@ alter table public.properties enable row level security;
 alter table public.property_likes enable row level security;
 alter table public.scheduled_visits enable row level security;
 
-create or replace function public.toggle_property_like(_property_id uuid, _user_id uuid)
+create or replace function public.toggle_property_like(_property_id uuid, _user_id uuid, _visitor_id text default null)
 returns void
 language plpgsql
 security definer
@@ -85,13 +93,21 @@ as $$
 declare
   existing_like_id uuid;
 begin
+  if _user_id is null and nullif(_visitor_id, '') is null then
+    raise exception 'Informe um usuário ou visitante para curtir o imóvel.';
+  end if;
+
   select id into existing_like_id
   from public.property_likes
-  where property_id = _property_id and user_id = _user_id;
+  where property_id = _property_id
+    and (
+      (_user_id is not null and user_id = _user_id)
+      or (_user_id is null and visitor_id = _visitor_id)
+    );
 
   if existing_like_id is null then
-    insert into public.property_likes (property_id, user_id)
-    values (_property_id, _user_id);
+    insert into public.property_likes (property_id, user_id, visitor_id)
+    values (_property_id, _user_id, case when _user_id is null then _visitor_id else null end);
 
     update public.properties
     set likes_count = likes_count + 1
@@ -128,10 +144,13 @@ on public.properties
 for delete
 using (public.has_role(auth.uid(), 'admin'));
 
-create policy "Users can read own likes"
+drop policy if exists "Users can read own likes" on public.property_likes;
+drop policy if exists "Anyone can read likes" on public.property_likes;
+
+create policy "Anyone can read likes"
 on public.property_likes
 for select
-using (auth.uid() = user_id or public.has_role(auth.uid(), 'admin'));
+using (true);
 
 create policy "Authenticated users can like"
 on public.property_likes
