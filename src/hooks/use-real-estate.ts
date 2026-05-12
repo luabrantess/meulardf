@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { checkIsAdmin, createProperty, getAdminOverview, getLikedPropertyIds, getPropertyBySlug, listProperties, scheduleVisit, togglePropertyLike } from "@/lib/property-service";
 import type { CreatePropertyInput, Property, PropertyFilters, ScheduleVisitInput } from "@/types/real-estate";
 import type { Session } from "@supabase/supabase-js";
+import { toast } from "sonner";
 
 export const useProperties = (filters: PropertyFilters = {}) =>
   useQuery({
@@ -52,10 +53,11 @@ export const useToggleLike = (session: Session | null) => {
 
       return { previousLiked, likedQueryKey };
     },
-    onError: (_error, _propertyId, context) => {
+    onError: (error, _propertyId, context) => {
       if (context) {
         queryClient.setQueryData(context.likedQueryKey, context.previousLiked);
       }
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar a curtida no Supabase.");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["properties"] });
