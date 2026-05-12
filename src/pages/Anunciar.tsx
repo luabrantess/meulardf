@@ -167,7 +167,6 @@ const Anunciar = () => {
             <select id="purpose" {...form.register("purpose")} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground">
               <option value="venda">Venda</option>
               <option value="aluguel">Aluguel</option>
-              <option value="lancamento">Lançamento</option>
             </select>
           </div>
 

@@ -164,21 +164,31 @@ for delete
 to authenticated
 using (auth.uid() = user_id);
 
+drop policy if exists "Admins can read all visits" on public.scheduled_visits;
+drop policy if exists "Anyone can create visit requests" on public.scheduled_visits;
+drop policy if exists "Admins can update visits" on public.scheduled_visits;
+
 create policy "Admins can read all visits"
 on public.scheduled_visits
 for select
+to authenticated
 using (public.has_role(auth.uid(), 'admin'));
 
 create policy "Anyone can create visit requests"
 on public.scheduled_visits
 for insert
+to anon, authenticated
 with check (true);
 
 create policy "Admins can update visits"
 on public.scheduled_visits
 for update
+to authenticated
 using (public.has_role(auth.uid(), 'admin'))
 with check (public.has_role(auth.uid(), 'admin'));
+
+grant select, insert on public.scheduled_visits to anon, authenticated;
+grant select on public.properties to anon, authenticated;
 
 insert into storage.buckets (id, name, public)
 values ('property-photos', 'property-photos', true)
