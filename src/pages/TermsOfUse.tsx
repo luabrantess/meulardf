@@ -40,6 +40,9 @@ const TermsOfUse = () => (
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
             As condições comerciais da plataforma, incluindo eventual taxa de licença, assinatura, plano de anúncio, pacote de divulgação, cobrança por lead ou outro modelo de remuneração, poderão ser definidas em proposta comercial, contrato próprio, painel administrativo, tabela vigente ou comunicação formal entre as partes.
           </p>
+          <p className="mt-3 text-sm leading-7 text-muted-foreground">
+            Do valor pago ao MeuLarDF pelos serviços de plataforma, divulgação, marketing, geração de leads, assinatura, plano de anúncio ou pacote contratado, poderá ser destinado ao desenvolvedor e mantenedor técnico do site o percentual de 10%, a título de remuneração técnica pela criação, manutenção, suporte e evolução da plataforma.
+          </p>
         </section>
 
         <section>
