@@ -1,13 +1,37 @@
 import { Search, MapPin, Home, DollarSign } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-building.jpg";
+import { useProperties } from "@/hooks/use-real-estate";
+
+const PRICE_INTERVAL = 200000;
+
+const formatPriceShort = (value: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(value);
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const { data: properties = [] } = useProperties();
   const [location, setLocation] = useState("");
   const [type, setType] = useState("");
   const [price, setPrice] = useState("");
+  const priceOptions = useMemo(() => {
+    const maxPrice = Math.max(...properties.map((property) => property.price), PRICE_INTERVAL);
+    const roundedMaxPrice = Math.ceil(maxPrice / PRICE_INTERVAL) * PRICE_INTERVAL;
+
+    return Array.from({ length: roundedMaxPrice / PRICE_INTERVAL }, (_, index) => {
+      const min = index * PRICE_INTERVAL;
+      const max = min + PRICE_INTERVAL;
+      return {
+        value: `${min}-${max}`,
+        label: min === 0 ? `Até ${formatPriceShort(max)}` : `${formatPriceShort(min)} a ${formatPriceShort(max)}`,
+      };
+    });
+  }, [properties]);
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -65,10 +89,11 @@ const HeroSection = () => {
               className="w-full cursor-pointer bg-transparent text-sm text-foreground outline-none"
             >
               <option value="">Faixa de valor</option>
-              <option value="0-500000">Até R$ 500 mil</option>
-              <option value="500000-1500000">R$ 500 mil a R$ 1,5 mi</option>
-              <option value="1500000-3000000">R$ 1,5 mi a R$ 3 mi</option>
-              <option value="3000000+">Acima de R$ 3 mi</option>
+              {priceOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
           <button
