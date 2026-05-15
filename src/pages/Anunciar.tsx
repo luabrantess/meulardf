@@ -25,7 +25,6 @@ const amenitiesOptions = [
   "Quadra esportiva",
   "Camera de segurança",
   "Closet",
-  "Segurança 24h",
   "Ar-condicionado",
   "Vista panorâmica",
   "Aceita permuta"
