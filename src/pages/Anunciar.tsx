@@ -28,6 +28,7 @@ const amenitiesOptions = [
   "Segurança 24h",
   "Ar-condicionado",
   "Vista panorâmica",
+  "Aceita permuta"
 ];
 
 const getSubmitErrorMessage = (error: unknown) => {
