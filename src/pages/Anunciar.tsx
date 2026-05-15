@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ImagePlus, Loader2, MapPin, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -71,6 +71,7 @@ const propertySchema = z.object({
   brokerPhone: z.string().trim().min(10, "Informe um telefone válido.").max(20, "Máximo de 20 caracteres."),
   purpose: z.enum(["venda", "aluguel", "lancamento"]),
   parkingSpots: z.coerce.number().min(0, "Não pode ser negativo.").max(20, "Máximo de 20 vagas."),
+  acceptedTerms: z.literal(true, { errorMap: () => ({ message: "Você precisa aceitar os Termos de Uso para publicar." }) }),
 });
 
 const Anunciar = () => {
@@ -92,6 +93,7 @@ const Anunciar = () => {
       brokerPhone: "",
       purpose: "venda",
       parkingSpots: 1,
+      acceptedTerms: false,
     },
   });
   const photoPreviews = useMemo(() => photos.map((photo) => URL.createObjectURL(photo)), [photos]);
@@ -303,6 +305,25 @@ const Anunciar = () => {
             <Label htmlFor="brokerPhone">Telefone</Label>
             <Input id="brokerPhone" type="tel" placeholder="(11) 99999-9999" {...form.register("brokerPhone")} />
             <p className="mt-1 text-xs text-destructive">{form.formState.errors.brokerPhone?.message}</p>
+          </div>
+
+          <div className="lg:col-span-2 rounded-lg border border-border bg-surface p-4">
+            <label className="flex items-start gap-3 text-sm text-muted-foreground">
+              <Checkbox
+                checked={form.watch("acceptedTerms")}
+                onCheckedChange={(checked) => {
+                  form.setValue("acceptedTerms", checked === true, { shouldValidate: true });
+                }}
+              />
+              <span>
+                Li e aceito os{" "}
+                <Link to="/termos-de-uso" target="_blank" className="font-display font-semibold text-primary underline-offset-4 hover:underline">
+                  Termos de Uso
+                </Link>
+                , incluindo as regras de uso da plataforma, divulgação, marketing e geração de leads.
+              </span>
+            </label>
+            <p className="mt-2 text-xs text-destructive">{form.formState.errors.acceptedTerms?.message}</p>
           </div>
 
           <div className="lg:col-span-2 flex flex-col gap-3 sm:flex-row sm:justify-end">
