@@ -7,6 +7,7 @@ const navItems = [
   { label: "Alugar", to: "/imoveis?purpose=aluguel" },
   { label: "Destaques", to: "/destaques" },
   { label: "Contato", to: "/#contato" },
+  { label: "Termos", to: "/termos-de-uso" },
 ];
 
 const Navbar = () => {

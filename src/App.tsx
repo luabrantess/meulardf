@@ -10,6 +10,7 @@ import Catalog from "./pages/Catalog.tsx";
 import Anunciar from "./pages/Anunciar.tsx";
 import Destaques from "./pages/Destaques.tsx";
 import Admin from "./pages/Admin.tsx";
+import TermsOfUse from "./pages/TermsOfUse.tsx";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/destaques" element={<Destaques />} />
           <Route path="/anunciar" element={<Anunciar />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/termos-de-uso" element={<TermsOfUse />} />
           <Route path="/imovel/:slug" element={<PropertyDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
