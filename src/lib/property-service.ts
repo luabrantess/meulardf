@@ -255,7 +255,14 @@ export const createProperty = async (input: CreatePropertyInput): Promise<Proper
   const slugBase = slugify(input.title);
   const fallbackImage = mockProperties[(Date.now() + input.title.length) % mockProperties.length]?.coverImage ?? defaultGallery[0];
   const slug = `${slugBase}-${Date.now().toString().slice(-5)}`;
-  const uploadedPhotos = await uploadPropertyPhotos(input.photos ?? [], slug);
+  let uploadedPhotos: string[] = [];
+
+  try {
+    uploadedPhotos = await uploadPropertyPhotos(input.photos ?? [], slug);
+  } catch (error) {
+    console.warn("Não foi possível enviar as fotos do imóvel. O anúncio será publicado com imagem padrão.", error);
+  }
+
   const gallery = uploadedPhotos.length ? uploadedPhotos : [fallbackImage, ...defaultGallery];
   const payload = {
     ...input,

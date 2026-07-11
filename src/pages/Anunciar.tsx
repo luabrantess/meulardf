@@ -47,11 +47,9 @@ const formatBRLInput = (value: string) => {
   const digits = value.replace(/\D/g, "");
   if (!digits) return "";
 
-  const numericValue = Number(digits) / 100;
   return new Intl.NumberFormat("pt-BR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(numericValue);
+    maximumFractionDigits: 0,
+  }).format(Number(digits));
 };
 
 const propertySchema = z.object({
@@ -155,7 +153,7 @@ const Anunciar = () => {
             <Input
               id="price"
               inputMode="decimal"
-              placeholder="Ex.: 850.000,00"
+              placeholder="Ex.: 850.000"
               {...form.register("price")}
               onChange={(event) => {
                 form.setValue("price", formatBRLInput(event.target.value), { shouldValidate: true });
