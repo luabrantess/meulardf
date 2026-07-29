@@ -309,6 +309,38 @@ export const createProperty = async (input: CreatePropertyInput): Promise<Proper
   return nextProperty;
 };
 
+export const updatePropertyPromotion = async (propertyId: string, price: number, featured: boolean): Promise<Property> => {
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase
+      .from("properties")
+      .update({ price, featured })
+      .eq("id", propertyId)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return mapRowToProperty(data);
+  }
+
+  const properties = readLocal<Property[]>(STORAGE_KEYS.properties, mockProperties);
+  const property = properties.find((item) => item.id === propertyId);
+  if (!property) throw new Error("Anúncio não encontrado.");
+
+  const updatedProperty = { ...property, price, featured };
+  writeLocal(STORAGE_KEYS.properties, properties.map((item) => item.id === propertyId ? updatedProperty : item));
+  return updatedProperty;
+};
+
+export const deleteProperty = async (propertyId: string) => {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from("properties").delete().eq("id", propertyId);
+    if (error) throw error;
+    return;
+  }
+
+  const properties = readLocal<Property[]>(STORAGE_KEYS.properties, mockProperties);
+  writeLocal(STORAGE_KEYS.properties, properties.filter((property) => property.id !== propertyId));
+};
+
 export const scheduleVisit = async (input: ScheduleVisitInput) => {
   if (isSupabaseConfigured && supabase) {
     const { error } = await supabase.from("scheduled_visits").insert({

@@ -1,14 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Building2, CalendarClock, Heart, Loader2, LogOut, Phone, ShieldCheck } from "lucide-react";
+import { Building2, CalendarClock, Heart, Loader2, LogOut, Pencil, Phone, ShieldCheck, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Navbar from "@/components/Navbar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuthSession } from "@/hooks/use-auth";
-import { useAdminAccess, useAdminOverview } from "@/hooks/use-real-estate";
+import { useAdminAccess, useAdminOverview, useDeleteProperty, useUpdatePropertyPromotion } from "@/hooks/use-real-estate";
 import { formatPhoneBR, formatPriceBRL, signInAdmin, signOutAdmin } from "@/lib/property-service";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import type { Property } from "@/types/real-estate";
 import { toast } from "sonner";
 
 const loginSchema = z.object({
@@ -20,6 +24,11 @@ const Admin = () => {
   const { session, loading } = useAuthSession();
   const { data: isAdmin, isLoading: checkingAdmin, error: adminAccessError } = useAdminAccess(session?.user?.id);
   const { data: overview, isLoading: loadingOverview, error: overviewError } = useAdminOverview(Boolean(session && isAdmin));
+  const updatePromotion = useUpdatePropertyPromotion();
+  const deleteProperty = useDeleteProperty();
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [promotionPrice, setPromotionPrice] = useState("");
+  const [featured, setFeatured] = useState(false);
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
@@ -33,6 +42,38 @@ const Admin = () => {
       toast.error(error instanceof Error ? error.message : "Não foi possível entrar.");
     }
   });
+
+  const openPromotionEditor = (property: Property) => {
+    setEditingProperty(property);
+    setPromotionPrice(String(property.price));
+    setFeatured(property.featured);
+  };
+
+  const savePromotion = async () => {
+    if (!editingProperty) return;
+    const price = Number(promotionPrice.replace(/\D/g, ""));
+    if (!Number.isFinite(price) || price <= 0) {
+      toast.error("Informe um preço promocional válido.");
+      return;
+    }
+    try {
+      await updatePromotion.mutateAsync({ propertyId: editingProperty.id, price, featured });
+      toast.success("Promoção atualizada.");
+      setEditingProperty(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar a promoção.");
+    }
+  };
+
+  const handleDelete = async (property: Property) => {
+    if (!window.confirm(`Excluir o anúncio “${property.title}”? Esta ação não pode ser desfeita.`)) return;
+    try {
+      await deleteProperty.mutateAsync(property.id);
+      toast.success("Anúncio excluído.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível excluir o anúncio.");
+    }
+  };
 
   if (loading) {
     return (
@@ -198,7 +239,7 @@ const Admin = () => {
                 </div>
                 <div className="divide-y divide-border">
                   {overview.properties.map((property) => (
-                    <div key={property.id} className="grid gap-3 px-5 py-4 sm:grid-cols-[1.2fr_0.8fr_0.8fr] sm:items-center">
+                    <div key={property.id} className="grid gap-3 px-5 py-4 sm:grid-cols-[1.2fr_0.8fr_0.8fr_auto] sm:items-center">
                       <div>
                         <p className="font-display font-semibold text-foreground">{property.title}</p>
                         <p className="text-sm text-muted-foreground">{property.location}</p>
@@ -213,6 +254,14 @@ const Admin = () => {
                           <p className="text-sm text-foreground">{formatPriceBRL(property.price)}</p>
                         </div>
                         <span className="rounded-full bg-surface px-3 py-1 text-xs font-display font-semibold text-primary">{property.likesCount} likes</span>
+                      </div>
+                      <div className="flex gap-2 sm:justify-end">
+                        <button type="button" onClick={() => openPromotionEditor(property)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border px-3 text-sm font-display font-semibold text-foreground transition-colors hover:bg-surface">
+                          <Pencil className="h-4 w-4" /> Editar
+                        </button>
+                        <button type="button" onClick={() => handleDelete(property)} disabled={deleteProperty.isPending} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-destructive/40 px-3 text-sm font-display font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60">
+                          <Trash2 className="h-4 w-4" /> Excluir
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -249,6 +298,28 @@ const Admin = () => {
           </>
         ) : null}
       </section>
+      <Dialog open={Boolean(editingProperty)} onOpenChange={(open) => !open && setEditingProperty(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar promoção</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5">
+            <p className="text-sm text-muted-foreground">{editingProperty?.title}</p>
+            <div>
+              <Label htmlFor="promotion-price">Preço promocional (R$)</Label>
+              <Input id="promotion-price" type="number" min="1" value={promotionPrice} onChange={(event) => setPromotionPrice(event.target.value)} />
+            </div>
+            <label className="flex items-center gap-3 text-sm text-foreground">
+              <Checkbox checked={featured} onCheckedChange={(checked) => setFeatured(checked === true)} />
+              Destacar este anúncio como promoção
+            </label>
+            <button type="button" onClick={savePromotion} disabled={updatePromotion.isPending} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-display font-semibold text-primary-foreground disabled:opacity-60">
+              {updatePromotion.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Salvar promoção
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

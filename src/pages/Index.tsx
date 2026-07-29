@@ -70,6 +70,7 @@ const Index = () => {
                 property={property}
                 liked={likedProperties.includes(property.id)}
                 onLike={(propertyId) => toggleLike.mutate(propertyId)}
+                showDescription={false}
               />
             ))}
           </div>

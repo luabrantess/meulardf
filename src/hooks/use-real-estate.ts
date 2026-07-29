@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { checkIsAdmin, createProperty, getAdminOverview, getLikedPropertyIds, getPropertyBySlug, listProperties, scheduleVisit, togglePropertyLike } from "@/lib/property-service";
+import { checkIsAdmin, createProperty, deleteProperty, getAdminOverview, getLikedPropertyIds, getPropertyBySlug, listProperties, scheduleVisit, togglePropertyLike, updatePropertyPromotion } from "@/lib/property-service";
 import type { CreatePropertyInput, Property, PropertyFilters, ScheduleVisitInput } from "@/types/real-estate";
 import type { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -72,6 +72,29 @@ export const useCreateProperty = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreatePropertyInput) => createProperty(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+    },
+  });
+};
+
+export const useUpdatePropertyPromotion = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ propertyId, price, featured }: { propertyId: string; price: number; featured: boolean }) => updatePropertyPromotion(propertyId, price, featured),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+      queryClient.invalidateQueries({ queryKey: ["property"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+    },
+  });
+};
+
+export const useDeleteProperty = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteProperty,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       queryClient.invalidateQueries({ queryKey: ["admin-overview"] });

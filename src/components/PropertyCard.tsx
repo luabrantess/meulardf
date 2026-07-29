@@ -7,9 +7,10 @@ interface PropertyCardProps {
   property: Property;
   liked?: boolean;
   onLike?: (propertyId: string) => void;
+  showDescription?: boolean;
 }
 
-const PropertyCard = ({ property, liked = false, onLike }: PropertyCardProps) => {
+const PropertyCard = ({ property, liked = false, onLike, showDescription = true }: PropertyCardProps) => {
   const navigate = useNavigate();
 
   return (
@@ -63,9 +64,9 @@ const PropertyCard = ({ property, liked = false, onLike }: PropertyCardProps) =>
           </div>
         </div>
 
-        <p className="mt-4 line-clamp-2 text-sm text-muted-foreground">{property.description}</p>
+        {showDescription ? <p className="mt-4 line-clamp-2 text-sm text-muted-foreground">{property.description}</p> : null}
 
-        <div className="mt-5 grid grid-cols-3 gap-3 border-t border-border pt-4 text-xs text-muted-foreground sm:text-sm">
+        <div className={`${showDescription ? "mt-5" : "mt-4"} grid grid-cols-3 gap-3 border-t border-border pt-4 text-xs text-muted-foreground sm:text-sm`}>
           <span className="inline-flex items-center gap-1.5">
             <Bed className="h-4 w-4 text-primary" /> {property.bedrooms} quartos
           </span>
