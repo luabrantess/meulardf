@@ -12,7 +12,6 @@ const Index = () => {
   const { data: likedProperties = [] } = useLikedProperties(session);
   const toggleLike = useToggleLike(session);
 
-  const featuredProperties = properties.filter((property) => property.featured).slice(0, 6);
   const spotlightProperty = [...properties].sort((a, b) => b.likesCount - a.likesCount)[0];
 
   return (
@@ -23,10 +22,10 @@ const Index = () => {
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-body uppercase tracking-[0.18em] text-muted-foreground">Curadoria</p>
-            <h2 className="mt-2 text-3xl font-display font-bold text-foreground">Imóveis em destaque</h2>
+            <p className="text-sm font-body uppercase tracking-[0.18em] text-muted-foreground">Anúncios</p>
+            <h2 className="mt-2 text-3xl font-display font-bold text-foreground">Todos os imóveis</h2>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
-              Os anúncios mais desejados, com curtidas ativas, visita marcada e navegação pronta para celular.
+              Confira todos os imóveis publicados na plataforma.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -65,7 +64,7 @@ const Index = () => {
           </div>
         ) : (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {featuredProperties.map((property) => (
+            {properties.map((property) => (
               <PropertyCard
                 key={property.id}
                 property={property}

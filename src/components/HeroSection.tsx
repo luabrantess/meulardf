@@ -5,6 +5,7 @@ import heroImage from "@/assets/hero-building.jpg";
 import { useProperties } from "@/hooks/use-real-estate";
 
 const PRICE_INTERVAL = 200000;
+const MAX_FILTER_PRICE = 10000000;
 
 const formatPriceShort = (value: number) =>
   new Intl.NumberFormat("pt-BR", {
@@ -20,7 +21,7 @@ const HeroSection = () => {
   const [type, setType] = useState("");
   const [price, setPrice] = useState("");
   const priceOptions = useMemo(() => {
-    const maxPrice = Math.max(...properties.map((property) => property.price), PRICE_INTERVAL);
+    const maxPrice = Math.max(...properties.map((property) => property.price), MAX_FILTER_PRICE);
     const roundedMaxPrice = Math.ceil(maxPrice / PRICE_INTERVAL) * PRICE_INTERVAL;
 
     return Array.from({ length: roundedMaxPrice / PRICE_INTERVAL }, (_, index) => {
