@@ -62,7 +62,7 @@ const propertySchema = z.object({
   bedrooms: z.coerce.number().min(1, "Mínimo de 1 quarto.").max(20, "Máximo de 20 quartos."),
   bathrooms: z.coerce.number().min(1, "Mínimo de 1 banheiro.").max(20, "Máximo de 20 banheiros."),
   areaTotal: z.coerce.number().min(20, "Área mínima de 20 m²."),
-  description: z.string().trim().min(10, "Descreva melhor o imóvel.").max(2500, "Máximo de 2500 caracteres."),
+  description: z.string().trim().max(2500, "Máximo de 2500 caracteres."),
   location: z.string().trim().min(5, "Informe a localização."),
   amenities: z.array(z.string()).min(1, "Selecione pelo menos uma comodidade."),
   brokerName: z.string().trim().min(3, "Informe o nome do corretor responsável.").max(100, "Máximo de 100 caracteres."),
