@@ -25,6 +25,8 @@ const purposeLabels = {
 
 const normalizePhone = (phone: string) => phone.replace(/\D/g, "");
 const PROPERTY_PHOTOS_BUCKET = "property-photos";
+export const isVideoUrl = (mediaUrl: string) =>
+  mediaUrl.startsWith("data:video/") || /\.(mp4|webm|mov)(?:[?#]|$)/i.test(mediaUrl);
 const normalizeSearchText = (value: string) =>
   value
     .normalize("NFD")
@@ -264,10 +266,11 @@ export const createProperty = async (input: CreatePropertyInput): Promise<Proper
   }
 
   const gallery = uploadedPhotos.length ? uploadedPhotos : [fallbackImage, ...defaultGallery];
+  const coverImage = gallery.find((mediaUrl) => !isVideoUrl(mediaUrl)) ?? fallbackImage;
   const payload = {
     ...input,
     slug,
-    coverImage: gallery[0],
+    coverImage,
     gallery,
   };
 

@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthSession } from "@/hooks/use-auth";
 import { useLikedProperties, useProperty, useScheduleVisit, useToggleLike } from "@/hooks/use-real-estate";
-import { formatPhoneBR, formatPriceBRL, getPurposeLabel } from "@/lib/property-service";
+import { formatPhoneBR, formatPriceBRL, getPurposeLabel, isVideoUrl } from "@/lib/property-service";
 import { toast } from "sonner";
 
 const visitSchema = z.object({
@@ -51,6 +51,7 @@ const PropertyDetail = () => {
   });
 
   const gallery = property?.gallery ?? [];
+  const currentMedia = gallery[currentImage] ?? property?.coverImage ?? "";
   const liked = property ? likedProperties.includes(property.id) : false;
   const mapUrl = useMemo(() => property?.mapEmbedUrl ?? `https://www.google.com/maps?q=${encodeURIComponent(property?.location ?? "Brasil")}&output=embed`, [property]);
 
@@ -109,7 +110,11 @@ const PropertyDetail = () => {
       <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="relative overflow-hidden rounded-lg border border-border bg-card">
-            <img src={gallery[currentImage] ?? property.coverImage} alt={property.title} className="h-[320px] w-full object-cover sm:h-[480px]" />
+            {isVideoUrl(currentMedia) ? (
+              <video src={currentMedia} className="h-[320px] w-full object-cover sm:h-[480px]" controls playsInline />
+            ) : (
+              <img src={currentMedia} alt={property.title} className="h-[320px] w-full object-cover sm:h-[480px]" />
+            )}
             <button onClick={showPreviousImage} className="absolute left-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-card/90 text-foreground backdrop-blur transition-opacity hover:opacity-90">
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -122,9 +127,13 @@ const PropertyDetail = () => {
             </div>
           </div>
           <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 lg:grid-cols-2">
-            {gallery.map((image, index) => (
-              <button key={`${image}-${index}`} onClick={() => setCurrentImage(index)} className={`overflow-hidden rounded-lg border ${index === currentImage ? "border-primary" : "border-border"}`}>
-                <img src={image} alt={`${property.title} ${index + 1}`} className="h-24 w-full object-cover lg:h-[116px]" loading="lazy" />
+            {gallery.map((mediaUrl, index) => (
+              <button key={`${mediaUrl}-${index}`} onClick={() => setCurrentImage(index)} className={`overflow-hidden rounded-lg border ${index === currentImage ? "border-primary" : "border-border"}`}>
+                {isVideoUrl(mediaUrl) ? (
+                  <video src={mediaUrl} className="h-24 w-full object-cover lg:h-[116px]" muted playsInline preload="metadata" />
+                ) : (
+                  <img src={mediaUrl} alt={`${property.title} ${index + 1}`} className="h-24 w-full object-cover lg:h-[116px]" loading="lazy" />
+                )}
               </button>
             ))}
           </div>

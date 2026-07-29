@@ -207,13 +207,13 @@ const Anunciar = () => {
               className="mt-2 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface px-4 py-6 text-center transition-colors hover:border-primary hover:bg-background"
             >
               <ImagePlus className="h-9 w-9 text-primary" />
-              <span className="mt-3 text-sm font-display font-semibold text-foreground">Selecionar fotos</span>
-              <span className="mt-1 text-xs text-muted-foreground">Use imagens JPG, PNG ou WebP. A primeira foto vira a capa do anúncio.</span>
+              <span className="mt-3 text-sm font-display font-semibold text-foreground">Selecionar fotos e vídeos</span>
+              <span className="mt-1 text-xs text-muted-foreground">Use imagens JPG, PNG ou WebP e vídeos MP4, WebM ou MOV. A primeira imagem vira a capa do anúncio.</span>
             </label>
             <Input
               id="photos"
               type="file"
-              accept="image/png,image/jpeg,image/webp"
+              accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
               multiple
               className="sr-only"
               onChange={(event) => {
@@ -226,16 +226,20 @@ const Anunciar = () => {
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {photoPreviews.map((preview, index) => (
                   <div key={preview} className="relative overflow-hidden rounded-lg border border-border bg-card">
-                    <img src={preview} alt={`Foto selecionada ${index + 1}`} className="h-36 w-full object-cover" />
+                    {photos[index]?.type.startsWith("video/") ? (
+                      <video src={preview} className="h-36 w-full object-cover" controls playsInline />
+                    ) : (
+                      <img src={preview} alt={`Foto selecionada ${index + 1}`} className="h-36 w-full object-cover" />
+                    )}
                     <button
                       type="button"
-                      aria-label="Remover foto"
+                      aria-label="Remover mídia"
                       onClick={() => setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index))}
                       className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-card/90 text-foreground shadow-sm backdrop-blur"
                     >
                       <X className="h-4 w-4" />
                     </button>
-                    {index === 0 ? <span className="absolute bottom-2 left-2 rounded-full bg-primary px-3 py-1 text-xs font-display font-semibold text-primary-foreground">Capa</span> : null}
+                    {!photos.slice(0, index).some((file) => !file.type.startsWith("video/")) && !photos[index]?.type.startsWith("video/") ? <span className="absolute bottom-2 left-2 rounded-full bg-primary px-3 py-1 text-xs font-display font-semibold text-primary-foreground">Capa</span> : null}
                   </div>
                 ))}
               </div>
