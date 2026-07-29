@@ -104,7 +104,7 @@ const Anunciar = () => {
     try {
       const property = await createProperty.mutateAsync({
         title: values.title,
-        price: parseBRLInput(values.price),
+        price: values.price,
         bedrooms: values.bedrooms,
         bathrooms: values.bathrooms,
         areaTotal: values.areaTotal,
