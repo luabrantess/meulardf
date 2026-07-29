@@ -1,4 +1,4 @@
-import { Building2, Mail, MapPin, Phone, TrendingUp } from "lucide-react";
+import { Building2, Mail, MapPin, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import HeroSection from "@/components/HeroSection";
 import Navbar from "@/components/Navbar";
@@ -11,8 +11,6 @@ const Index = () => {
   const { data: properties = [], isLoading } = useProperties();
   const { data: likedProperties = [] } = useLikedProperties(session);
   const toggleLike = useToggleLike(session);
-
-  const spotlightProperty = [...properties].sort((a, b) => b.likesCount - a.likesCount)[0];
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,24 +35,6 @@ const Index = () => {
             </Link>
           </div>
         </div>
-
-        {spotlightProperty && (
-          <div className="mb-10 grid gap-6 rounded-lg border border-border bg-surface p-5 lg:grid-cols-[1.4fr_1fr] lg:p-6">
-            <div>
-              <p className="inline-flex items-center gap-2 rounded-full bg-card px-3 py-1 text-xs font-display font-semibold text-primary">
-                <TrendingUp className="h-3.5 w-3.5" /> Mais curtido agora
-              </p>
-              <h3 className="mt-4 text-2xl font-display font-bold text-foreground">{spotlightProperty.title}</h3>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">{spotlightProperty.description}</p>
-              <div className="mt-5 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                <span className="rounded-full bg-card px-3 py-1">{spotlightProperty.location}</span>
-                <span className="rounded-full bg-card px-3 py-1">{spotlightProperty.likesCount} likes</span>
-                <span className="rounded-full bg-card px-3 py-1">{spotlightProperty.areaTotal} m²</span>
-              </div>
-            </div>
-            <img src={spotlightProperty.coverImage} alt={spotlightProperty.title} className="h-60 w-full rounded-md object-cover lg:h-full" loading="lazy" />
-          </div>
-        )}
 
         {isLoading ? (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
