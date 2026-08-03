@@ -20,6 +20,7 @@ export interface Property {
   gallery: string[];
   purpose: PropertyPurpose;
   featured: boolean;
+  sold: boolean;
   likesCount: number;
   published: boolean;
   createdAt: string;

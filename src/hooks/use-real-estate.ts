@@ -82,7 +82,7 @@ export const useCreateProperty = () => {
 export const useUpdatePropertyPromotion = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ propertyId, price, featured }: { propertyId: string; price: number; featured: boolean }) => updatePropertyPromotion(propertyId, price, featured),
+    mutationFn: ({ propertyId, price, featured, sold }: { propertyId: string; price: number; featured: boolean; sold: boolean }) => updatePropertyPromotion(propertyId, price, featured, sold),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       queryClient.invalidateQueries({ queryKey: ["property"] });

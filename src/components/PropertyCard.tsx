@@ -30,6 +30,7 @@ const PropertyCard = ({ property, liked = false, onLike, showDescription = true 
             <span className="rounded-full bg-card/90 px-3 py-1 text-xs font-display font-semibold text-foreground backdrop-blur">
               {getPurposeLabel(property.purpose)}
             </span>
+            {property.sold && <span className="rounded-full bg-destructive px-3 py-1 text-xs font-display font-semibold text-destructive-foreground">Vendido</span>}
             {property.featured && (
               <span className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-display font-semibold text-accent-foreground">
                 <Star className="h-3 w-3" /> Destaque

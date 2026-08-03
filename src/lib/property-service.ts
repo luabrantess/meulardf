@@ -100,6 +100,7 @@ const mapRowToProperty = (row: Record<string, unknown>): Property => ({
   gallery: Array.isArray(row.gallery) ? (row.gallery as string[]) : [String(row.cover_image)],
   purpose: (row.purpose as Property["purpose"]) ?? "venda",
   featured: Boolean(row.featured),
+  sold: Boolean(row.sold),
   likesCount: Number(row.likes_count ?? 0),
   published: Boolean(row.published ?? true),
   createdAt: String(row.created_at ?? new Date().toISOString()),
@@ -123,6 +124,7 @@ const mapPropertyToInsert = (property: CreatePropertyInput & { slug: string; cov
   gallery: property.gallery,
   purpose: property.purpose,
   featured: false,
+  sold: false,
   published: true,
   likes_count: 0,
   map_embed_url: `https://www.google.com/maps?q=${encodeURIComponent(property.location)}&output=embed`,
@@ -309,11 +311,11 @@ export const createProperty = async (input: CreatePropertyInput): Promise<Proper
   return nextProperty;
 };
 
-export const updatePropertyPromotion = async (propertyId: string, price: number, featured: boolean): Promise<Property> => {
+export const updatePropertyPromotion = async (propertyId: string, price: number, featured: boolean, sold = false): Promise<Property> => {
   if (isSupabaseConfigured && supabase) {
     const { data, error } = await supabase
       .from("properties")
-      .update({ price, featured })
+      .update({ price, featured, sold })
       .eq("id", propertyId)
       .select("*")
       .single();
@@ -325,7 +327,7 @@ export const updatePropertyPromotion = async (propertyId: string, price: number,
   const property = properties.find((item) => item.id === propertyId);
   if (!property) throw new Error("Anúncio não encontrado.");
 
-  const updatedProperty = { ...property, price, featured };
+  const updatedProperty = { ...property, price, featured, sold };
   writeLocal(STORAGE_KEYS.properties, properties.map((item) => item.id === propertyId ? updatedProperty : item));
   return updatedProperty;
 };

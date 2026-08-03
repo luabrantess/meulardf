@@ -46,6 +46,7 @@ create table if not exists public.properties (
   gallery text[] not null default '{}',
   purpose public.property_purpose not null default 'venda',
   featured boolean not null default false,
+  sold boolean not null default false,
   likes_count integer not null default 0,
   published boolean not null default true,
   map_embed_url text,
@@ -79,6 +80,8 @@ create table if not exists public.scheduled_visits (
   status public.visit_status not null default 'novo',
   created_at timestamptz not null default now()
 );
+
+alter table public.properties add column if not exists sold boolean not null default false;
 
 alter table public.properties enable row level security;
 alter table public.property_likes enable row level security;

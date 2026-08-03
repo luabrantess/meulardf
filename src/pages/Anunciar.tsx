@@ -201,24 +201,40 @@ const Anunciar = () => {
           </div>
 
           <div className="lg:col-span-2">
-            <Label htmlFor="photos">Fotos do imóvel</Label>
-            <label
-              htmlFor="photos"
-              className="mt-2 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface px-4 py-6 text-center transition-colors hover:border-primary hover:bg-background"
-            >
-              <ImagePlus className="h-9 w-9 text-primary" />
-              <span className="mt-3 text-sm font-display font-semibold text-foreground">Selecionar fotos e vídeos</span>
-              <span className="mt-1 text-xs text-muted-foreground">Use imagens JPG, PNG ou WebP e vídeos MP4, WebM ou MOV. A primeira imagem vira a capa do anúncio.</span>
-            </label>
+            <Label>Fotos e vídeos do imóvel</Label>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <label htmlFor="photos" className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface px-4 py-6 text-center transition-colors hover:border-primary hover:bg-background">
+                <ImagePlus className="h-9 w-9 text-primary" />
+                <span className="mt-3 text-sm font-display font-semibold text-foreground">Selecionar fotos</span>
+                <span className="mt-1 text-xs text-muted-foreground">JPG, PNG ou WebP</span>
+              </label>
+              <label htmlFor="videos" className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface px-4 py-6 text-center transition-colors hover:border-primary hover:bg-background">
+                <ImagePlus className="h-9 w-9 text-primary" />
+                <span className="mt-3 text-sm font-display font-semibold text-foreground">Selecionar vídeos</span>
+                <span className="mt-1 text-xs text-muted-foreground">MP4, WebM ou MOV</span>
+              </label>
+            </div>
             <Input
               id="photos"
               type="file"
-              accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
+              accept="image/png,image/jpeg,image/webp"
               multiple
               className="sr-only"
               onChange={(event) => {
                 const selectedPhotos = Array.from(event.target.files ?? []);
                 setPhotos((current) => [...current, ...selectedPhotos].slice(0, 8));
+                event.target.value = "";
+              }}
+            />
+            <Input
+              id="videos"
+              type="file"
+              accept="video/*,.mp4,.webm,.mov"
+              multiple
+              className="sr-only"
+              onChange={(event) => {
+                const selectedVideos = Array.from(event.target.files ?? []);
+                setPhotos((current) => [...current, ...selectedVideos].slice(0, 8));
                 event.target.value = "";
               }}
             />

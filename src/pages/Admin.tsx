@@ -29,6 +29,7 @@ const Admin = () => {
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [promotionPrice, setPromotionPrice] = useState("");
   const [featured, setFeatured] = useState(false);
+  const [sold, setSold] = useState(false);
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
@@ -47,6 +48,7 @@ const Admin = () => {
     setEditingProperty(property);
     setPromotionPrice(String(property.price));
     setFeatured(property.featured);
+    setSold(property.sold);
   };
 
   const savePromotion = async () => {
@@ -57,7 +59,7 @@ const Admin = () => {
       return;
     }
     try {
-      await updatePromotion.mutateAsync({ propertyId: editingProperty.id, price, featured });
+      await updatePromotion.mutateAsync({ propertyId: editingProperty.id, price, featured, sold });
       toast.success("Promoção atualizada.");
       setEditingProperty(null);
     } catch (error) {
@@ -312,6 +314,10 @@ const Admin = () => {
             <label className="flex items-center gap-3 text-sm text-foreground">
               <Checkbox checked={featured} onCheckedChange={(checked) => setFeatured(checked === true)} />
               Destacar este anúncio como promoção
+            </label>
+            <label className="flex items-center gap-3 text-sm text-foreground">
+              <Checkbox checked={sold} onCheckedChange={(checked) => setSold(checked === true)} />
+              Mark property as sold
             </label>
             <button type="button" onClick={savePromotion} disabled={updatePromotion.isPending} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-display font-semibold text-primary-foreground disabled:opacity-60">
               {updatePromotion.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
