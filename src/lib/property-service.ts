@@ -26,7 +26,7 @@ const purposeLabels = {
 const normalizePhone = (phone: string) => phone.replace(/\D/g, "");
 const PROPERTY_PHOTOS_BUCKET = "property-photos";
 export const isVideoUrl = (mediaUrl: string) =>
-  mediaUrl.startsWith("data:video/") || /\.(mp4|webm|mov)(?:[?#]|$)/i.test(mediaUrl);
+  mediaUrl.startsWith("data:video/") || /\.(mp4|webm|mov|m4v)(?:[?#]|$)/i.test(mediaUrl);
 const normalizeSearchText = (value: string) =>
   value
     .normalize("NFD")
@@ -259,13 +259,7 @@ export const createProperty = async (input: CreatePropertyInput): Promise<Proper
   const slugBase = slugify(input.title);
   const fallbackImage = mockProperties[(Date.now() + input.title.length) % mockProperties.length]?.coverImage ?? defaultGallery[0];
   const slug = `${slugBase}-${Date.now().toString().slice(-5)}`;
-  let uploadedPhotos: string[] = [];
-
-  try {
-    uploadedPhotos = await uploadPropertyPhotos(input.photos ?? [], slug);
-  } catch (error) {
-    console.warn("Não foi possível enviar as fotos do imóvel. O anúncio será publicado com imagem padrão.", error);
-  }
+  const uploadedPhotos = await uploadPropertyPhotos(input.photos ?? [], slug);
 
   const gallery = uploadedPhotos.length ? uploadedPhotos : [fallbackImage, ...defaultGallery];
   const coverImage = gallery.find((mediaUrl) => !isVideoUrl(mediaUrl)) ?? fallbackImage;
