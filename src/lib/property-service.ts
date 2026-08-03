@@ -329,8 +329,10 @@ export const updatePropertyPromotion = async (propertyId: string, price: number,
 export const deleteProperty = async (propertyId: string) => {
   if (isSupabaseConfigured && supabase) {
     const { error } = await supabase.from("properties").delete().eq("id", propertyId);
-    if (error) throw error;
-    return;
+    if (!error) return;
+
+    const { error: archiveError } = await supabase.from("properties").update({ published: false }).eq("id", propertyId);
+    if (archiveError) throw error;
   }
 
   const properties = readLocal<Property[]>(STORAGE_KEYS.properties, mockProperties);
