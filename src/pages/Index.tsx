@@ -79,7 +79,7 @@ const Index = () => {
             <div>
               <div className="mb-4 flex items-center gap-2">
                 <Building2 className="h-6 w-6" />
-                <span className="text-lg font-display font-bold">MeuLAR</span>
+                <span className="text-lg font-display font-bold">meuLARdf</span>
               </div>
               <p className="max-w-sm text-sm text-primary-foreground/75">
                 Portal em português com anúncio, curtidas, agendamento de visitas e visão operacional para a equipe administrativa.
@@ -104,7 +104,7 @@ const Index = () => {
             </div>
           </div>
           <div className="mt-10 border-t border-primary-foreground/20 pt-6 text-center text-xs text-primary-foreground/55">
-            © 2026 MeuLAR. Todos os direitos reservados.
+            © 2026 meuLARdf. Todos os direitos reservados.
           </div>
         </div>
       </footer>
